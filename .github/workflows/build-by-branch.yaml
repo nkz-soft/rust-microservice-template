@@ -1,32 +1,32 @@
 name: build-by-branch
 
 on:
-    push:
-        branches:
-            - main
-            - f/*
-            - fix/*
-        paths-ignore:
-            - "**.md"
-    pull_request:
-        branches:
-            - main
-        paths-ignore:
-            - "**.md"
+  push:
+    branches:
+    - main
+    - f/*
+    - fix/*
+    paths-ignore:
+    - "**.md"
+  pull_request:
+   branches:
+   - main
+   paths-ignore:
+   - "**.md"
 jobs:
-    build:
-        runs-on: ubuntu-latest
-        timeout-minutes: 5
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v3
-            - name: Install Rust toolchain
-              uses: actions-rs/toolchain@v1
-              with:
-                toolchain: stable
-                override: true
-            - name: Build
-              uses: actions-rs/cargo@v1
-              with:
-                command: build
-                args: --release --all-features
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Install Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+    - name: Build
+      uses: actions-rs/cargo@v1
+      with:
+        command: build
+        args: --release --all-features
