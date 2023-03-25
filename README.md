@@ -8,6 +8,7 @@ Template for microservice based on Domain Driven Design principles with Rust
 
 The purpose of this project is to provide a means for building microservices with the last version of Rust that follows basic Domain Driven Design principles 
 
+
 ### ⭐ Give a star
 
 If you're using this repository for your learning, samples or your project, please give a star. Thanks :+1:
@@ -15,19 +16,65 @@ If you're using this repository for your learning, samples or your project, plea
 ## Table of Contents
 
 - [Installation](#installation)
+- [Architecture](#architecture )
 - [Deployment](#deployment)
 - [Plan](#plan)
 - [Technologies - Libraries](#technologies-used)
 
-## Installation
+## Usage
+### Prerequisites
+
+Before you can install and configure the microservice, you will need to ensure that you have the following prerequisites installed:
+- Docker and Docker Compose
+
+### Installation
+Once you have all the prerequisites installed, you can follow these steps to install and configure your microservice:
+
+1. Clone the repository for your microservice using Git:
+```bash
+git clone https://github.com/nkz-soft/rust-microservice-template.git
+```
+2. Change into the directory for your microservice:
+```bash
+cd rust-microservice-template/deployment/docker
+```
+
+3. You can use the included Dockerfile and docker-compose.yml files to build and deploy the microservice. 
+Simply run the following command in the root directory of your project:
+```bash
+./docker-compose.sh up --build -d
+```
+4. Verify that the microservice is running correctly by visiting the endpoint in your web browser or using a tool like curl:
+```bash
+curl -v http://localhost:8080/
+```
+
+### Configuration
+To configure the microservice, you will need to modify the configuration file.
+
+## Architecture
+The microservice is divided into three layers: the Domain Layer, the Application Layer, and the Infrastructure Layer.
+
+### Domain Layer
+The Domain Layer is the heart of the Domain Driven Design (DDD) approach. It contains the business logic and rules that drive the application.
+In Rust, the Domain Layer consists of structs, traits, enums, and functions that model the problem domain in a way that is easy to understand and maintain.
+
+### Application Layer
+The Application Layer is responsible for coordinating the Domain Layer and the Infrastructure Layer. 
+It translates user requests and external events into actions that the Domain Layer can understand, and communicates the results back to the user or external systems.
+
+### Infrastructure Layer
+
+The Infrastructure Layer is responsible for providing the necessary infrastructure to run the application. 
+This can include things like databases, message queues, and external APIs.
 
 ## Deployment
 
 ## Plan
 
 - [x] New blank microservice solution
-- [ ] Basic Github actions
-- [ ] Docker compose
+- [x] Basic Github actions
+- [x] Docker compose
 - [ ] REST API
 - [ ] Coming soon :)
 

@@ -1,0 +1,14 @@
+﻿version: '3.9'
+
+services:
+  rust-template:
+    build:
+      context: ./../../
+      dockerfile: Dockerfile
+    ports:
+      - "0.0.0.0:8080:8080"
+    networks:
+      - dev-network
+
+networks:
+  dev-network:
