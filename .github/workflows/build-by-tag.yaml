@@ -1,0 +1,55 @@
+name: build-by-tag
+
+on:
+  push:
+    tags:
+    - '**'           # Push events to every tag including hierarchical tags like v1.0/beta
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Cache
+      uses: actions/cache@v3
+      with:
+          path: |
+              ~/.cargo/registry
+              ~/.cargo/git
+              target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+    - name: Install Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+          toolchain: stable
+          override: true
+    - name: Build
+      uses: actions-rs/cargo@v1
+      with:
+          command: build
+          args: --release --all-features
+    - name: Docker meta
+      id: meta
+      uses: docker/metadata-action@v4
+      with:
+        images: ghcr.io/nkz-soft/rust-microservice-template/rust-microservice-template
+    - name: Login to Github Packages
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Build image and push to GitHub Container Registry
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: ${{ steps.meta.outputs.tags }}
+    - name: Image digest
+      run: echo ${{ steps.docker_build.outputs.digest }}
+    - name: Drafts release notes
+      uses: release-drafter/release-drafter@v5
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
