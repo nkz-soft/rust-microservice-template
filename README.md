@@ -8,7 +8,6 @@ Template for microservice based on Domain Driven Design principles with Rust
 
 The purpose of this project is to provide a means for building microservices with the last version of Rust that follows basic Domain Driven Design principles 
 
-
 ### ⭐ Give a star
 
 If you're using this repository for your learning, samples or your project, please give a star. Thanks :+1:
@@ -50,7 +49,7 @@ curl -v http://localhost:8080/get
 ```
 
 ### Configuration
-To configure the microservice, you will need to modify the configuration file.
+To configure the microservice, you will need to modify the configuration file: config.app.toml.
 
 ## Architecture
 The microservice is divided into three layers: the Domain Layer, the Application Layer, and the Infrastructure Layer.
@@ -80,6 +79,7 @@ CQRS (Command Query Responsibility Segregation) is a pattern that separates the 
 - [x] An example of a test REST API
 - [ ] CQRS (Command Query Responsibility Segregation)
 - [ ] PostgreSQL storage
+- [ ] Coming soon :)
 
 ## Technologies used
 
