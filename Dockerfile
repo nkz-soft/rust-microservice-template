@@ -4,7 +4,7 @@ EXPOSE 8080
 
 WORKDIR /app
 
-COPY ./target/release/rust-microservice-template .
+COPY ./target/release/starter .
 COPY config.app.toml .
 
 CMD ["./starter"]
