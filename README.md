@@ -46,7 +46,7 @@ Simply run the following command in the root directory of your project:
 ```
 4. Verify that the microservice is running correctly by visiting the endpoint in your web browser or using a tool like curl:
 ```bash
-curl -v http://localhost:8080/
+curl -v http://localhost:8080/get
 ```
 
 ### Configuration
@@ -64,9 +64,11 @@ The Application Layer is responsible for coordinating the Domain Layer and the I
 It translates user requests and external events into actions that the Domain Layer can understand, and communicates the results back to the user or external systems.
 
 ### Infrastructure Layer
-
 The Infrastructure Layer is responsible for providing the necessary infrastructure to run the application. 
 This can include things like databases, message queues, and external APIs.
+
+### CQRS 
+CQRS (Command Query Responsibility Segregation) is a pattern that separates the read and write responsibilities of an application into separate models.
 
 ## Deployment
 
@@ -75,8 +77,9 @@ This can include things like databases, message queues, and external APIs.
 - [x] New blank microservice solution
 - [x] Basic Github actions
 - [x] Docker compose
-- [ ] REST API
-- [ ] Coming soon :)
+- [x] An example of a test REST API
+- [ ] CQRS (Command Query Responsibility Segregation)
+- [ ] PostgreSQL storage
 
 ## Technologies used
 

@@ -3,18 +3,16 @@ members = [
     "src/domain",
     "src/infrastructure",
     "src/application",
-    "src/presentation"
+    "src/presentation",
+    "src/starter"
 ]
 
-[package]
-name = "rust-microservice-template"
-version = "0.1.0"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-actix-web = "4.3.1"
-confy = "0.5.1"
+[workspace.dependencies]
+actix-web = "4.3"
+log = "0.4"
+confy = "0.5"
 serde = { version = "1.0", features = ["derive"] }
-env_logger = "0.10.0"
+serde_json = "1.0"
+env_logger = "0.10"
+uuid = { verson = "1.3", features = ["v4", "serde"] }
+readonly = "0.2"
