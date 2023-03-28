@@ -1,24 +1,26 @@
 use actix_web::{middleware, App, HttpServer};
-use crate::config::AppConfig;
+
+mod settings;
 
 extern crate presentation;
-
-mod config;
+extern crate infrastructure;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
-    let conf : AppConfig = confy::load_path(config::CONFIG_FILE_NAME).unwrap();
+    let conf = settings::Settings::new().unwrap();
 
-    log::info!("Starting HTTP server at {}", conf.url);
+    log::info!("Starting HTTP server at {}", conf.web_url);
+
+    infrastructure::configure(&conf.postgres_url).await.unwrap();
 
     HttpServer::new(|| {
         App::new()
-            .configure(presentation::config::configure)
+            .configure(presentation::configure)
             .wrap(middleware::Logger::default())
         })
-        .bind(&conf.url)?
+        .bind(&conf.web_url)?
         .run()
         .await
 }
