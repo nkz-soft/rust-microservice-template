@@ -79,9 +79,11 @@ CQRS (Command Query Responsibility Segregation) is a pattern that separates the 
 - [x] An example of a test REST API
 - [ ] CQRS (Command Query Responsibility Segregation)
 - [ ] PostgreSQL storage
+  - [X] Add support for migrations 
 - [ ] Coming soon :)
 
 ## Technologies used
 
 - [Rust](https://github.com/rust-lang/rust): The Rust Programming Language
 - [Actix](https://github.com/actix/actix-web): Actix Web is a powerful, pragmatic, and extremely fast web framework for Rust
+- [Refinery](https://github.com/rust-db/refinery): Refinery strives to make running migrations for different databases as easy as possible.
