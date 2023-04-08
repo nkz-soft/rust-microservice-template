@@ -1,0 +1,27 @@
+### Create
+POST http://localhost:8181/to-do-items
+Content-Type: application/json
+
+{
+    "title": "Title1",
+    "note": "Note1"
+}
+
+### Get all
+GET http://localhost:8181/to-do-items
+
+### Get by Id
+GET http://localhost:8181/to-do-items/{{id}}
+
+### Update
+PUT http://localhost:8181/to-do-items
+Content-Type: application/json
+
+{
+    "id": {{id}},
+    "title": "Title2",
+    "note": "Note2"
+}
+
+### Delete
+DELETE http://localhost:8181/to-do-items/{{id}}

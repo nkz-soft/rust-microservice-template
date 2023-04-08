@@ -1,14 +1,24 @@
-use actix_web::{http, web};
-use serde_json;
+use actix_web::{web};
+
+use crate::api;
 extern crate application;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::resource("/get").to(|| async
-        {
-            let get_handler = application::handlers::GetToDoItemQueryHandler::new();
-            let data = get_handler.execute();
-            actix_web::HttpResponse::Ok()
-                .content_type(http::header::ContentType::json())
-                .body(serde_json::to_string(&data).unwrap())
-        }));
+    cfg.service(
+    web::scope("/to-do-items")
+        .service(
+            web::resource("")
+                .route(web::get().to(api::get_all))
+                .route(web::post().to(api::create))
+                .route(web::put().to(api::update))
+            )
+        .service(
+            web::scope("/{id}").
+                service(
+            web::resource("")
+                    .route(web::get().to(api::get_by_id))
+                    .route(web::delete().to(api::delete))
+                )
+            )
+        );
 }
