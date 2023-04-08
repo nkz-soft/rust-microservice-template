@@ -77,11 +77,11 @@ CQRS (Command Query Responsibility Segregation) is a pattern that separates the 
 - [x] Basic Github actions
 - [x] Docker compose
 - [x] An example of a test REST API
-- [ ] CQRS (Command Query Responsibility Segregation)
-- [ ] PostgreSQL storage
+- [x] CQRS (Command Query Responsibility Segregation)
+- [x] PostgreSQL storage
   - [X] Add support for migrations
   - [X] CRUD Operation
-- [] Advanced error handling
+- [ ] Advanced error handling
 - [ ] Coming soon :)
 
 ## Technologies used
