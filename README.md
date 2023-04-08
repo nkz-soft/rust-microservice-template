@@ -45,7 +45,7 @@ Simply run the following command in the root directory of your project:
 ```
 4. Verify that the microservice is running correctly by visiting the endpoint in your web browser or using a tool like curl:
 ```bash
-curl -v http://localhost:8080/get
+curl -v  http://localhost:8181/to-do-items
 ```
 
 ### Configuration
@@ -89,4 +89,4 @@ CQRS (Command Query Responsibility Segregation) is a pattern that separates the 
 - [Rust](https://github.com/rust-lang/rust): The Rust Programming Language
 - [Actix](https://github.com/actix/actix-web): Actix Web is a powerful, pragmatic, and extremely fast web framework for Rust
 - [Refinery](https://github.com/rust-db/refinery): Refinery strives to make running migrations for different databases as easy as possible.
-- [Shaku](https://github.com/AzureMarker/shaku): Shaku is a compile time dependency injection Rust library.
+- [rust-postgres](https://github.com/sfackler/rust-postgres): PostgreSQL support for Rust.
