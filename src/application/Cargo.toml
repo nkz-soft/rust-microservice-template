@@ -9,3 +9,10 @@ edition = "2021"
 uuid.workspace = true
 readonly.workspace = true
 serde.workspace = true
+async-trait.workspace = true
+actix-web.workspace = true
+deadpool-postgres.workspace = true
+tokio-postgres.workspace = true
+postgres-types.workspace = true
+
+domain = { path = "../domain" }

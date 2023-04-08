@@ -1,17 +1,16 @@
-use tokio_postgres::{NoTls, Error};
+use std::ops::DerefMut;
+use deadpool_postgres::Pool;
+use tokio_postgres::{Error};
 
 use crate::migration;
 
-pub async fn configure(connection: &String) -> Result<(), Error> {
-    let (mut client, connection) =
-        tokio_postgres::connect(connection, NoTls).await?;
+pub async fn configure(pool: &Pool) -> Result<(), Error> {
 
-    tokio::spawn(async move {
-        connection.await.unwrap();
-    });
+    let mut obj = pool.get().await.unwrap();
+    let client = obj.deref_mut().deref_mut();
 
     migration::migrations::runner()
-        .run_async(&mut client)
+        .run_async(client)
         .await
         .unwrap();
 

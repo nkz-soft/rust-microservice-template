@@ -1,2 +1,7 @@
-web_url = '0.0.0.0:8080'
-postgres_url = 'postgres://postgres:postgres@localhost:5432/rust_template_db'
+web_url = 'localhost:8181'
+pg.user = 'postgres'
+pg.password = 'postgres'
+pg.host = '127.0.0.1'
+pg.port = 5432
+pg.dbname = 'rust_template_db'
+pg.pool.max_size = 16

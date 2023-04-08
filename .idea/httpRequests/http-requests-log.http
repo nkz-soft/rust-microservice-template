@@ -1,0 +1,558 @@
+GET http://localhost:8181/to-do-items
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T182103.200.json
+
+###
+
+GET http://localhost:8181/to-do-items
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T182101.200.json
+
+###
+
+DELETE http://localhost:8181/to-do-items/6d2938f3-da9f-4717-92ae-ea7c2a35c90f
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+###
+
+GET http://localhost:8181/to-do-items/6d2938f3-da9f-4717-92ae-ea7c2a35c90f
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T182054.200.json
+
+###
+
+PUT http://localhost:8181/to-do-items
+Content-Type: application/json
+Content-Length: 96
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+    "id": "6d2938f3-da9f-4717-92ae-ea7c2a35c90f",
+    "title": "Title2",
+    "note": "Note2"
+}
+
+###
+
+PUT http://localhost:8181/to-do-items
+Content-Type: application/json
+Content-Length: 96
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+    "id": "6d2938f3-da9f-4717-92ae-ea7c2a35c90f",
+    "title": "Title2",
+    "note": "Note2"
+}
+
+###
+
+GET http://localhost:8181/to-do-items/6d2938f3-da9f-4717-92ae-ea7c2a35c90f
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T182028.200.json
+
+###
+
+GET http://localhost:8181/to-do-items
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T182024.200.json
+
+###
+
+GET http://localhost:8181/to-do-items
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T182022.200.json
+
+###
+
+POST http://localhost:8181/to-do-items
+Content-Type: application/json
+Content-Length: 46
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+    "title": "Title1",
+    "note": "Note1"
+}
+
+<> 2023-04-08T182004.200.json
+
+###
+
+GET http://localhost:8181/to-do-items/fff0e6c6-122f-4cb9-9ec0-2c354016696f
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T180625.200.json
+
+###
+
+PUT http://localhost:8181/to-do-items
+Content-Type: application/json
+Content-Length: 96
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+    "id": "fff0e6c6-122f-4cb9-9ec0-2c354016696f",
+    "title": "Title2",
+    "note": "Note2"
+}
+
+###
+
+PUT http://localhost:8181/to-do-items
+Content-Type: application/json
+Content-Length: 96
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+    "id": "fff0e6c6-122f-4cb9-9ec0-2c354016696f",
+    "title": "Title2",
+    "note": "Note2"
+}
+
+###
+
+PUT http://localhost:8181/to-do-itemsfff0e6c6-122f-4cb9-9ec0-2c354016696f
+Content-Type: application/json
+Content-Length: 94
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+    "id": fff0e6c6-122f-4cb9-9ec0-2c354016696f,
+    "title": "Title2",
+    "note": "Note2"
+}
+
+###
+
+GET http://localhost:8181/to-do-items/fff0e6c6-122f-4cb9-9ec0-2c354016696f
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T180420.200.json
+
+###
+
+PUT http://localhost:8181/to-do-itemsfff0e6c6-122f-4cb9-9ec0-2c354016696f
+Content-Type: application/json
+Content-Length: 94
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+    "id": fff0e6c6-122f-4cb9-9ec0-2c354016696f,
+    "title": "Title2",
+    "note": "Note2"
+}
+
+###
+
+PUT http://localhost:8181/to-do-items
+Content-Type: application/json
+Content-Length: 64
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+    "id": {{id}},
+    "title": "Title2",
+    "note": "Note2"
+}
+
+###
+
+PUT http://localhost:8181/to-do-items
+Content-Type: application/json
+Content-Length: 64
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+    "id": {{id}},
+    "title": "Title2",
+    "note": "Note2"
+}
+
+###
+
+GET http://localhost:8181/to-do-items/fff0e6c6-122f-4cb9-9ec0-2c354016696f
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T180355.200.json
+
+###
+
+GET http://localhost:8181/to-do-items
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T180338.200.json
+
+###
+
+POST http://localhost:8181/to-do-items
+Content-Type: application/json
+Content-Length: 46
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+    "title": "Title1",
+    "note": "Note1"
+}
+
+<> 2023-04-08T180336.200.json
+
+###
+
+GET http://localhost:8181/to-do-items
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T174732.200.json
+
+###
+
+GET http://localhost:8181/to-do-items
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T174731.200.json
+
+###
+
+DELETE http://localhost:8181/to-do-items/7da46d07-338a-40c2-bb7d-c6118feb61ce
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+###
+
+GET http://localhost:8181/to-do-items/7da46d07-338a-40c2-bb7d-c6118feb61ce
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T174720.200.json
+
+###
+
+GET http://localhost:8181/to-do-items
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T174717.200.json
+
+###
+
+POST http://localhost:8181/to-do-items
+Content-Type: application/json
+Content-Length: 46
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+    "title": "Title1",
+    "note": "Note1"
+}
+
+<> 2023-04-08T174652.200.json
+
+###
+
+GET http://localhost:8181/to-do-items
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T174536.200.json
+
+###
+
+DELETE http://localhost:8181/to-do-items/cd1c15e4-96a5-4f98-9132-29cad23e3e86
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+###
+
+DELETE http://localhost:8181/to-do-items/cd1c15e4-96a5-4f98-9132-29cad23e3e86
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T174432.400.txt
+
+###
+
+DELETE http://localhost:8181/to-do-items/cd1c15e4-96a5-4f98-9132-29cad23e3e86
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T174402.400.txt
+
+###
+
+GET http://localhost:8181/to-do-items/cd1c15e4-96a5-4f98-9132-29cad23e3e86
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T174358.200.json
+
+###
+
+GET http://localhost:8181/to-do-items
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T174353.200.json
+
+###
+
+POST http://localhost:8181/to-do-items
+Content-Type: application/json
+Content-Length: 46
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+    "title": "Title1",
+    "note": "Note1"
+}
+
+<> 2023-04-08T174349.200.json
+
+###
+
+POST http://localhost:8181/to-do-items
+Content-Type: application/json
+Content-Length: 46
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+    "title": "Title1",
+    "note": "Note1"
+}
+
+<> 2023-04-08T174347.200.json
+
+###
+
+DELETE http://localhost:8181/to-do-items/cd1c15e4-96a5-4f98-9132-29cad23e3e86
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T174145.400.txt
+
+###
+
+GET http://localhost:8181/to-do-items/cd1c15e4-96a5-4f98-9132-29cad23e3e86
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T174140.200.json
+
+###
+
+GET http://localhost:8181/to-do-items
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T174136.200.json
+
+###
+
+POST http://localhost:8181/to-do-items
+Content-Type: application/json
+Content-Length: 46
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+    "title": "Title1",
+    "note": "Note1"
+}
+
+<> 2023-04-08T174134.200.json
+
+###
+
+DELETE http://localhost:8181/to-do-items/cd1c15e4-96a5-4f98-9132-29cad23e3e86
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T173356.400.txt
+
+###
+
+DELETE http://localhost:8181/to-do-items/cd1c15e4-96a5-4f98-9132-29cad23e3e86
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T173338.400.txt
+
+###
+
+PUT http://localhost:8181/to-do-items
+Content-Type: application/json
+Content-Length: 64
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+    "id": {{id}},
+    "title": "Title1",
+    "note": "Note1"
+}
+
+###
+
+GET http://localhost:8181/to-do-items/cd1c15e4-96a5-4f98-9132-29cad23e3e86
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T173327.200.json
+
+###
+
+GET http://localhost:8181/to-do-items/cd1c15e4-96a5-4f98-9132-29cad23e3e86
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T173211.200.json
+
+###
+
+PUT http://localhost:8181/to-do-items
+Content-Type: application/json
+Content-Length: 64
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+    "id": {{id}},
+    "title": "Title1",
+    "note": "Note1"
+}
+
+###
+
+PUT http://localhost:8181/to-do-items
+Content-Type: application/json
+Content-Length: 64
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+    "id": {{id}},
+    "title": "Title1",
+    "note": "Note1"
+}
+
+###
+
+PUT http://localhost:8181/to-do-items
+Content-Type: application/json
+Content-Length: 64
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+    "id": {{id}},
+    "title": "Title1",
+    "note": "Note1"
+}
+
+###
+
+GET http://localhost:8181/to-do-items/cd1c15e4-96a5-4f98-9132-29cad23e3e86
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T173122.200.json
+
+###
+
+DELETE http://localhost:8181/to-do-items/cd1c15e4-96a5-4f98-9132-29cad23e3e86
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T172113.400.txt
+
+###
+
+GET http://localhost:8181/to-do-items
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-04-08T172100.200.json
+
+###
+

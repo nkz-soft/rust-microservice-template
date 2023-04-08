@@ -7,14 +7,16 @@ pub const CONFIG_FILE_NAME: &str = "config.app.toml";
 #[derive(Serialize, Deserialize)]
 pub struct Settings {
     pub web_url: String,
-    pub postgres_url: String
+    pub pg: deadpool_postgres::Config
 }
 
 impl Default for Settings {
-    fn default() -> Self { Self {
-        web_url: "0.0.0.0:8080".into(),
-        postgres_url: "postgres://postgres@localhost".into()
-    } }
+    fn default() -> Self {
+        Self {
+            web_url: "0.0.0.0:8080".into(),
+            pg: deadpool_postgres::Config::default()
+        }
+    }
 }
 
 impl Settings {

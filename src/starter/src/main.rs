@@ -1,4 +1,5 @@
-use actix_web::{middleware, App, HttpServer};
+use actix_web::{middleware, App, HttpServer, web};
+use deadpool_postgres::tokio_postgres::NoTls;
 
 mod settings;
 
@@ -9,18 +10,21 @@ extern crate infrastructure;
 async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
-    let conf = settings::Settings::new().unwrap();
+    let config = settings::Settings::new().unwrap();
 
-    log::info!("Starting HTTP server at {}", conf.web_url);
+    log::info!("Starting HTTP server at {}", &config.web_url);
 
-    infrastructure::configure(&conf.postgres_url).await.unwrap();
+    let pool = config.pg.create_pool(None, NoTls).unwrap();
 
-    HttpServer::new(|| {
+    infrastructure::configure(&pool).await.unwrap();
+
+    HttpServer::new(move || {
         App::new()
+            .app_data(web::Data::new(pool.clone()))
             .configure(presentation::configure)
             .wrap(middleware::Logger::default())
         })
-        .bind(&conf.web_url)?
+        .bind(&config.web_url)?
         .run()
         .await
 }
