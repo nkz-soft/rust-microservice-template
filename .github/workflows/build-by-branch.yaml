@@ -4,7 +4,7 @@ on:
   push:
     branches:
     - main
-    - f/*
+    - feature/*
     - fix/*
     paths-ignore:
     - "**.md"
