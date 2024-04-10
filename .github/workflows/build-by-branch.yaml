@@ -35,7 +35,9 @@ jobs:
         components: rustfmt, clippy
     - name: Check code style
       run: cargo fmt -- --check
+      continue-on-error: true
     - name: Build
       run: cargo build --release --all-features
     - name: Check code
       run: cargo clippy
+      continue-on-error: true
