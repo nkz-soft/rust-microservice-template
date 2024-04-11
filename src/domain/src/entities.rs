@@ -1,5 +1,5 @@
-use uuid::Uuid;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::entity;
 
@@ -20,15 +20,8 @@ impl ToDoItem {
     }
 
     pub fn new_id(id: Uuid, title: String, note: String) -> Self {
-        Self {
-            id,
-            title,
-            note,
-        }
+        Self { id, title, note }
     }
 }
 
-impl entity::Entity<ToDoItem> for ToDoItem {
-}
-
-
+impl entity::Entity<ToDoItem> for ToDoItem {}

@@ -1,10 +1,10 @@
-use actix_web::{middleware, App, HttpServer, web};
+use actix_web::{middleware, web, App, HttpServer};
 use deadpool_postgres::tokio_postgres::NoTls;
 
 mod settings;
 
-extern crate presentation;
 extern crate infrastructure;
+extern crate presentation;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -23,8 +23,8 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(pool.clone()))
             .configure(presentation::configure)
             .wrap(middleware::Logger::default())
-        })
-        .bind(&config.web_url)?
-        .run()
-        .await
+    })
+    .bind(&config.web_url)?
+    .run()
+    .await
 }

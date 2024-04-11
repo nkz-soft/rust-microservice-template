@@ -1,2 +1,1 @@
-pub trait Entity<T> {
-}
+pub trait Entity<T> {}

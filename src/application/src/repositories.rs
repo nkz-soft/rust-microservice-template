@@ -1,6 +1,6 @@
-use uuid::Uuid;
 use async_trait::async_trait;
 use domain::entities::ToDoItem;
+use uuid::Uuid;
 
 #[async_trait]
 pub trait ToDoItemRepository {
