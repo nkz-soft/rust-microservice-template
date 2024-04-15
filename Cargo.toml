@@ -19,6 +19,6 @@ readonly = "0.2"
 tokio-postgres = { version = "0.7", features = ["with-uuid-1"] }
 postgres-types = { version = "0.2", features = ["uuid-1"] }
 refinery = { version = "0.8", features = ["tokio-postgres"] }
-tokio = { version = "1.9", features = ["full"] }
+tokio = { version = "1.28", features = ["full"] }
 async-trait = "0.1"
 deadpool-postgres = { version = "0.10", features = ["serde"] }
