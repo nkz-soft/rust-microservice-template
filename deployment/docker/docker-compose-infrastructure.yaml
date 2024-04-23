@@ -1,12 +1,12 @@
 version: '3.9'
 
 volumes:
-  postgres:
+  postgres-rust:
 
 services:
 
   postgres:
-    image: postgres:14
+    image: postgres:15-alpine
     environment:
       POSTGRES_PASSWORD: postgres
     ports:
@@ -14,7 +14,7 @@ services:
     networks:
       - rust-dev-network
     volumes:
-      - postgres:/var/lib/postgresql/data
+      - postgres-rust:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "PGPASSWORD=postgres pg_isready -U postgres -h postgres"]
       interval: 10s

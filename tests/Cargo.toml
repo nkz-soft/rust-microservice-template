@@ -1,0 +1,15 @@
+[package]
+name = "integration_tests"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies]
+testcontainers.workspace = true
+testcontainers-modules.workspace = true
+reqwest.workspace = true
+tokio.workspace = true
+tokio-postgres.workspace = true
+serde.workspace = true
+
+starter = { path = "../src/starter" }
+application = { path = "../src/application" }

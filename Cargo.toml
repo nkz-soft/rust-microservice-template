@@ -4,21 +4,26 @@ members = [
     "src/infrastructure",
     "src/application",
     "src/presentation",
-    "src/starter"
+    "src/starter",
+    "tests"
 ]
 
 [workspace.dependencies]
-actix-web = "4.5"
-log = "0.4"
-config = "0.14"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-env_logger = "0.11"
+actix-web = "4.5.1"
+log = "0.4.21"
+config = "0.14.0"
+serde = { version = "1.0.198", features = ["derive"] }
+serde_json = "1.0.116"
+env_logger = "0.11.3"
 uuid = { verson = "1.4", features = ["v4", "serde"] }
-readonly = "0.2"
-tokio-postgres = { version = "0.7", features = ["with-uuid-1"] }
-postgres-types = { version = "0.2", features = ["uuid-1"] }
-refinery = { version = "0.8", features = ["tokio-postgres"] }
-tokio = { version = "1.37", features = ["full"] }
-async-trait = "0.1"
-deadpool-postgres = { version = "0.13", features = ["serde"] }
+readonly = "0.2.12"
+tokio-postgres = { version = "0.7.10", features = ["with-uuid-1"] }
+postgres-types = { version = "0.2.6", features = ["uuid-1"] }
+refinery = { version = "0.8.14", features = ["tokio-postgres"] }
+tokio = { version = "1.37.0", features = ["full"] }
+async-trait = "0.1.80"
+deadpool-postgres = { version = "0.13.0", features = ["serde"] }
+testcontainers = "0.15.0"
+testcontainers-modules = { version = "0.3.7", features = ["postgres"] }
+reqwest = {version = "0.12.4", features = ["json"]}
+
