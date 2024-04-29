@@ -10,6 +10,8 @@ reqwest.workspace = true
 tokio.workspace = true
 tokio-postgres.workspace = true
 serde.workspace = true
+serial_test.workspace = true
 
-starter = { path = "../src/starter" }
-application = { path = "../src/application" }
+starter = { path = "../../src/starter" }
+application = { path = "../../src/application" }
+uuid = { version = "1.8.0", features = ["v4"] }

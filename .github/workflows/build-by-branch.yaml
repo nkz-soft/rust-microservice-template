@@ -41,3 +41,5 @@ jobs:
     - name: Check code
       run: cargo clippy
       continue-on-error: true
+    - name: Tests
+      run: cargo test

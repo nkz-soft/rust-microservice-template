@@ -66,6 +66,12 @@ It translates user requests and external events into actions that the Domain Lay
 The Infrastructure Layer is responsible for providing the necessary infrastructure to run the application. 
 This can include things like databases, message queues, and external APIs.
 
+### Presentation Layer
+The presentation layer is responsible for handling user interactions and presenting information to users. 
+This layer typically includes user interfaces such as web applications, desktop applications, mobile apps, or APIs.
+
+
+
 ### CQRS 
 CQRS (Command Query Responsibility Segregation) is a pattern that separates the read and write responsibilities of an application into separate models.
 
@@ -76,7 +82,7 @@ CQRS (Command Query Responsibility Segregation) is a pattern that separates the 
 - [x] New blank microservice solution
 - [x] Basic Github actions
 - [x] Docker compose
-- [x] An example of a test REST API
+- [x] REST API 
 - [x] CQRS (Command Query Responsibility Segregation)
 - [x] PostgreSQL storage
   - [X] Add support for migrations
