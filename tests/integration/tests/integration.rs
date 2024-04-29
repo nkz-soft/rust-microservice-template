@@ -3,21 +3,22 @@ extern crate starter;
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-    use serial_test::serial;
 
+    use serial_test::serial;
+    use std::collections::HashMap;
     use testcontainers::{clients, RunnableImage};
     use testcontainers_modules::postgres;
     use uuid::Uuid;
 
     const CONFIG_FILE_PATH: &str = "./../../";
 
+    #[macro_export]
     macro_rules! prepare_test_container {
-        () => (
+        () => {
             let docker = clients::Cli::default();
             let image = RunnableImage::from(postgres::Postgres::default())
-            .with_tag("15-alpine")
-            .with_mapped_port((5432, 5432));
+                .with_tag("15-alpine")
+                .with_mapped_port((5432, 5432));
 
             let _node = docker.run(image);
 
@@ -38,18 +39,18 @@ mod tests {
                 .query("CREATE DATABASE rust_template_db;", &[])
                 .await
                 .unwrap();
-
-            let server = starter::run_with_config(&CONFIG_FILE_PATH)
-                .await
-                .expect("Failed to bind address");
-            let _ = tokio::spawn(server);
-        )
+        };
     }
 
     #[serial]
     #[tokio::test]
     async fn test_get_all() {
         prepare_test_container!();
+
+        let server = starter::run_with_config(&CONFIG_FILE_PATH)
+            .await
+            .expect("Failed to bind address");
+        let _server_task = tokio::spawn(server);
 
         let client = reqwest::Client::new();
 
@@ -62,12 +63,19 @@ mod tests {
 
         // Assert
         assert!(response.status().is_success());
+
+        _server_task.abort();
     }
 
     #[serial]
     #[tokio::test]
-    async fn test_create()  {
+    async fn test_create() {
         prepare_test_container!();
+
+        let server = starter::run_with_config(&CONFIG_FILE_PATH)
+            .await
+            .expect("Failed to bind address");
+        let _server_task = tokio::spawn(server);
 
         let client = reqwest::Client::new();
         let mut map = HashMap::new();
@@ -84,12 +92,19 @@ mod tests {
 
         // Assert
         assert!(response.status().is_success());
+
+        _server_task.abort();
     }
 
     #[serial]
     #[tokio::test]
     async fn test_update() {
         prepare_test_container!();
+
+        let server = starter::run_with_config(&CONFIG_FILE_PATH)
+            .await
+            .expect("Failed to bind address");
+        let _server_task = tokio::spawn(server);
 
         let client = reqwest::Client::new();
         let mut map_create = HashMap::new();
@@ -121,12 +136,19 @@ mod tests {
 
         // Assert
         assert!(response.status().is_success());
+
+        _server_task.abort();
     }
 
     #[serial]
     #[tokio::test]
     async fn test_get_by_id() {
         prepare_test_container!();
+
+        let server = starter::run_with_config(&CONFIG_FILE_PATH)
+            .await
+            .expect("Failed to bind address");
+        let _server_task = tokio::spawn(server);
 
         let client = reqwest::Client::new();
         let mut map_create = HashMap::new();
@@ -152,12 +174,19 @@ mod tests {
 
         // Assert
         assert!(response.status().is_success());
+
+        _server_task.abort();
     }
 
     #[serial]
     #[tokio::test]
     async fn test_delete() {
         prepare_test_container!();
+
+        let server = starter::run_with_config(&CONFIG_FILE_PATH)
+            .await
+            .expect("Failed to bind address");
+        let _server_task = tokio::spawn(server);
 
         let client = reqwest::Client::new();
         let mut map_create = HashMap::new();
@@ -175,7 +204,6 @@ mod tests {
             .await
             .expect("Failed to deserialize response.");
 
-
         let response = client
             .delete(format!("http://127.0.0.1:8181/to-do-items/{id}", id = id))
             .send()
@@ -184,5 +212,7 @@ mod tests {
 
         // Assert
         assert!(response.status().is_success());
+
+        _server_task.abort();
     }
 }

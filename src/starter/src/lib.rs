@@ -6,13 +6,15 @@ use deadpool_postgres::tokio_postgres::NoTls;
 mod settings;
 
 pub async fn run() -> Result<Server, std::io::Error> {
-    let _env_logger = env_logger::try_init_from_env(env_logger::Env::new().default_filter_or("info"));
+    let _env_logger =
+        env_logger::try_init_from_env(env_logger::Env::new().default_filter_or("info"));
     let settings = Settings::new().unwrap();
     run_internal(&settings).await
 }
 
 pub async fn run_with_config(path: &str) -> Result<Server, std::io::Error> {
-    let _env_logger = env_logger::try_init_from_env(env_logger::Env::new().default_filter_or("info"));
+    let _env_logger =
+        env_logger::try_init_from_env(env_logger::Env::new().default_filter_or("info"));
     let settings = Settings::with_path(path).unwrap();
     run_internal(&settings).await
 }
