@@ -10,7 +10,7 @@ use tokio::task::JoinHandle;
 #[macro_export]
 macro_rules! prepare_test_environment {
     () => {{
-        server_utils::init_once().await;
+        server_utils::init().await;
         reqwest::Client::new()
     }}
 }
@@ -45,7 +45,7 @@ impl Server {
 
 pub(crate) static TEST_SERVER_ONCE: OnceCell<Server> = OnceCell::const_new();
 
-pub(crate) async fn init_once() {
+pub(crate) async fn init() {
     TEST_SERVER_ONCE.get_or_init(Server::start).await;
 }
 

@@ -1584,23 +1584,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "integration_tests"
-version = "0.0.1"
-dependencies = [
- "application",
- "deadpool-postgres",
- "reqwest",
- "serde",
- "serial_test",
- "starter",
- "testcontainers",
- "testcontainers-modules",
- "tokio",
- "tokio-postgres",
- "uuid",
-]
-
-[[package]]
 name = "ipnet"
 version = "2.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

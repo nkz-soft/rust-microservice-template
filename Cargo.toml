@@ -4,8 +4,7 @@ members = [
     "src/infrastructure",
     "src/application",
     "src/presentation",
-    "src/starter",
-    "tests/integration"
+    "src/starter"
 ]
 resolver = "2"
 
