@@ -3,44 +3,27 @@ extern crate starter;
 
 #[cfg(test)]
 mod tests {
-
-    use serial_test::serial;
     use std::collections::HashMap;
     use std::time::Duration;
-    use testcontainers::{clients, RunnableImage};
-    use testcontainers_modules::postgres;
-    use tokio::task;
+
+    use serial_test::serial;
+    use testcontainers_modules::postgres::Postgres;
+    use testcontainers_modules::testcontainers::core::IntoContainerPort;
+    use testcontainers_modules::testcontainers::runners::AsyncRunner;
+    use testcontainers_modules::testcontainers::ImageExt;
     use uuid::Uuid;
+
 
     const CONFIG_FILE_PATH: &str = "./../../";
 
     #[macro_export]
     macro_rules! prepare_test_container {
         () => {
-            let docker = clients::Cli::default();
-            let image = RunnableImage::from(postgres::Postgres::default())
-                .with_tag("15-alpine")
-                .with_mapped_port((5432, 5432));
-
-            let _node = docker.run(image);
-
-            let (client, connection) = tokio_postgres::connect(
-                "host=localhost user=postgres password=postgres",
-                tokio_postgres::NoTls,
-            )
-            .await
-            .unwrap();
-
-            tokio::spawn(async move {
-                if let Err(e) = connection.await {
-                    eprintln!("connection error: {}", e);
-                }
-            });
-
-            client
-                .query("CREATE DATABASE rust_template_db;", &[])
-                .await
-                .unwrap();
+            let _node = Postgres::default()
+                .with_db_name("rust_template_db")
+                .with_mapped_port(5432, 5432.tcp())
+                .with_tag("16-alpine")
+                .start().await.unwrap();
 
             let server = starter::run_with_config(&CONFIG_FILE_PATH)
                 .await
@@ -53,6 +36,13 @@ mod tests {
     #[tokio::test]
     async fn test_get_all() {
         prepare_test_container!();
+
+        tokio::time::sleep(Duration::from_secs(5)).await;
+
+        let server = starter::run_with_config(&CONFIG_FILE_PATH)
+            .await
+            .expect("Failed to bind address");
+        let _server_task = tokio::spawn(server);
 
         let client = reqwest::Client::new();
 

@@ -16,18 +16,18 @@ config = "0.14.0"
 serde = { version = "1.0.198", features = ["derive"] }
 serde_json = "1.0.116"
 env_logger = "0.11.3"
-uuid = { verson = "1.4", features = ["v4", "serde"] }
+uuid = { version = "1.10.0", features = ["v4", "serde"] }
 readonly = "0.2.12"
 tokio-postgres = { version = "0.7.10", features = ["with-uuid-1"] }
 postgres-types = { version = "0.2.6", features = ["uuid-1"] }
 refinery = { version = "0.8.14", features = ["tokio-postgres"] }
 tokio = { version = "1.37.0", features = ["full"] }
 async-trait = "0.1.80"
-deadpool-postgres = { version = "0.13.0", features = ["serde"] }
-testcontainers = "0.15.0"
-testcontainers-modules = { version = "0.3.7", features = ["postgres"] }
-reqwest = {version = "0.12.4", features = ["json"]}
+deadpool-postgres = { version = "0.14.0", features = ["serde"] }
+testcontainers = "0.23.1"
+testcontainers-modules = { version = "0.11.3", features = ["postgres"] }
+reqwest = { version = "0.12.4", features = ["json"]}
 quote = "1.0.36"
-syn = {version = "2.0.60", features = ["full"]}
+syn = { version = "2.0.60", features = ["full"] }
 serial_test = "3.1.0"
 

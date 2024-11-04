@@ -9,10 +9,10 @@ edition = "2021"
 refinery.workspace = true
 tokio-postgres.workspace = true
 tokio.workspace = true
-uuid.workspace = true
 async-trait.workspace = true
 deadpool-postgres.workspace = true
 actix-web.workspace = true
+uuid.workspace = true
 
 domain = { path = "../domain" }
 application = { path = "../application" }
