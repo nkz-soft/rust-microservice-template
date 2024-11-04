@@ -21,15 +21,11 @@ jobs:
               target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
     - name: Install Rust toolchain
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
       with:
           toolchain: stable
-          override: true
     - name: Build
-      uses: actions-rs/cargo@v1
-      with:
-          command: build
-          args: --release --all-features
+      run: cargo build --release --all-features
     - name: Docker meta
       id: meta
       uses: docker/metadata-action@v4

@@ -4,7 +4,7 @@ on:
   push:
     branches:
     - main
-    - f/*
+    - feature/*
     - fix/*
     paths-ignore:
     - "**.md"
@@ -29,12 +29,17 @@ jobs:
           target
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
     - name: Install Rust toolchain
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: stable
-        override: true
+        components: rustfmt, clippy
+    - name: Check code style
+      run: cargo fmt -- --check
+      continue-on-error: true
     - name: Build
-      uses: actions-rs/cargo@v1
-      with:
-        command: build
-        args: --release --all-features
+      run: cargo build --release --all-features
+    - name: Check code
+      run: cargo clippy
+      continue-on-error: true
+    - name: Tests
+      run: cargo test
