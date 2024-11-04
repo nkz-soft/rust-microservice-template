@@ -1,3 +1,4 @@
+use std::time::Duration;
 use crate::tests::CONFIG_FILE_PATH;
 use ctor::dtor;
 use testcontainers::core::IntoContainerPort;
@@ -12,7 +13,7 @@ macro_rules! prepare_test_environment {
     () => {{
         server_utils::init().await;
         reqwest::Client::new()
-    }}
+    }};
 }
 
 pub struct Server {
@@ -27,7 +28,9 @@ impl Server {
             .with_db_name("rust_template_db")
             .with_mapped_port(5432, 5432.tcp())
             .with_tag("16-alpine")
-            .start().await.unwrap();
+            .start()
+            .await
+            .unwrap();
 
         let server_handle = tokio::spawn(async move {
             let server = starter::run_with_config(&CONFIG_FILE_PATH)
@@ -35,7 +38,11 @@ impl Server {
                 .expect("Failed to bind address");
             let _server_task = tokio::spawn(server);
         });
-        Server { server_handle, container }
+        tokio::time::sleep(Duration::from_secs(1)).await;
+        Server {
+            server_handle,
+            container,
+        }
     }
 
     pub fn container(&self) -> &ContainerAsync<Postgres> {

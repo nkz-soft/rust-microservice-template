@@ -1,13 +1,12 @@
 mod utils;
 
-
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
+    use crate::prepare_test_environment;
     use crate::utils::server_utils;
     use serial_test::serial;
+    use std::collections::HashMap;
     use uuid::Uuid;
-    use crate::prepare_test_environment;
 
     pub(crate) const CONFIG_FILE_PATH: &str = "./../../";
     #[serial]
@@ -146,6 +145,3 @@ mod tests {
         assert!(response.status().is_success());
     }
 }
-
-
-
