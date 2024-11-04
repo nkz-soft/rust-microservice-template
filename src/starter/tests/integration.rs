@@ -14,7 +14,7 @@ mod tests {
     #[tokio::test]
     async fn start_server_and_test() {
         let client = prepare_test_environment!();
-        assert!(client.get("http://127.0.0.1:8181").send().await.is_ok());
+        assert!(client.get("http://localhost:8181").send().await.is_ok());
     }
 
     #[serial]
@@ -24,7 +24,7 @@ mod tests {
 
         // Act
         let response = client
-            .get("http://127.0.0.1:8181/to-do-items")
+            .get("http://localhost:8181/to-do-items")
             .send()
             .await
             .expect("Failed to execute request.");
@@ -43,7 +43,7 @@ mod tests {
 
         // Act
         let id = client
-            .post("http://127.0.0.1:8181/to-do-items")
+            .post("http://localhost:8181/to-do-items")
             .json(&map_create)
             .send()
             .await
@@ -53,7 +53,7 @@ mod tests {
             .expect("Failed to deserialize response.");
 
         let response = client
-            .get(format!("http://127.0.0.1:8181/to-do-items/{id}", id = id))
+            .get(format!("http://localhost:8181/to-do-items/{id}", id = id))
             .send()
             .await
             .expect("Failed to execute request.");
@@ -72,7 +72,7 @@ mod tests {
 
         // Act
         let response = client
-            .post("http://127.0.0.1:8181/to-do-items")
+            .post("http://localhost:8181/to-do-items")
             .json(&map)
             .send()
             .await
@@ -92,7 +92,7 @@ mod tests {
 
         // Act
         let id = client
-            .post("http://127.0.0.1:8181/to-do-items")
+            .post("http://localhost:8181/to-do-items")
             .json(&map_create)
             .send()
             .await
@@ -107,7 +107,7 @@ mod tests {
         map_update.insert("note", String::from("note1"));
 
         let response = client
-            .put("http://127.0.0.1:8181/to-do-items")
+            .put("http://localhost:8181/to-do-items")
             .json(&map_update)
             .send()
             .await
@@ -127,7 +127,7 @@ mod tests {
 
         // Act
         let id = client
-            .post("http://127.0.0.1:8181/to-do-items")
+            .post("http://localhost:8181/to-do-items")
             .json(&map_create)
             .send()
             .await
@@ -137,7 +137,7 @@ mod tests {
             .expect("Failed to deserialize response.");
 
         let response = client
-            .delete(format!("http://127.0.0.1:8181/to-do-items/{id}", id = id))
+            .delete(format!("http://localhost:8181/to-do-items/{id}", id = id))
             .send()
             .await
             .expect("Failed to execute request.");
