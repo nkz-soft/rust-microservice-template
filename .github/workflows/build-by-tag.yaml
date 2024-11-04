@@ -28,7 +28,7 @@ jobs:
       run: cargo build --release --all-features
     - name: Docker meta
       id: meta
-      uses: docker/metadata-action@v4
+      uses: docker/metadata-action@v5
       with:
         images: ghcr.io/nkz-soft/rust-microservice-template/rust-microservice-template
     - name: Login to Github Packages
