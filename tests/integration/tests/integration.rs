@@ -12,6 +12,7 @@ mod tests {
     use testcontainers_modules::testcontainers::runners::AsyncRunner;
     use testcontainers_modules::testcontainers::ImageExt;
     use uuid::Uuid;
+    use std::sync::Once;
 
 
     const CONFIG_FILE_PATH: &str = "./../../";
@@ -30,6 +31,23 @@ mod tests {
                 .expect("Failed to bind address");
             let _server_task = tokio::spawn(server);
         };
+    }
+
+    static INIT: Once = Once::new();
+
+    pub fn initialize() {
+        INIT.call_once(|| {
+            let _node = Postgres::default()
+                .with_db_name("rust_template_db")
+                .with_mapped_port(5432, 5432.tcp())
+                .with_tag("16-alpine")
+                .start().await.unwrap();
+
+            let server = starter::run_with_config(&CONFIG_FILE_PATH)
+                .await
+                .expect("Failed to bind address");
+            let _server_task = tokio::spawn(server);
+        });
     }
 
     #[serial]

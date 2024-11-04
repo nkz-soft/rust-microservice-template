@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 pub const CONFIG_FILE_NAME: &str = "config.app.toml";
 #[readonly::make]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Settings {
     pub web_url: String,
     pub pg: deadpool_postgres::Config,

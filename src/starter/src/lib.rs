@@ -2,6 +2,7 @@ use crate::settings::Settings;
 use actix_web::dev::Server;
 use actix_web::{middleware, web, App, HttpServer};
 use deadpool_postgres::tokio_postgres::NoTls;
+use log::{debug, info};
 
 mod settings;
 
@@ -20,7 +21,8 @@ pub async fn run_with_config(path: &str) -> Result<Server, std::io::Error> {
 }
 
 pub async fn run_internal(settings: &Settings) -> Result<Server, std::io::Error> {
-    log::info!("Starting HTTP server at {}", &settings.web_url);
+    info!("Starting HTTP server at {}", &settings.web_url);
+    debug!("with configuration: {:?}", &settings);
 
     let pool = settings.pg.create_pool(None, NoTls).unwrap();
 

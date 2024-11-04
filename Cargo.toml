@@ -31,3 +31,8 @@ quote = "1.0.36"
 syn = { version = "2.0.60", features = ["full"] }
 serial_test = "3.1.0"
 
+# Error Handling
+anyhow = "1.0.89"
+thiserror = "1.0.64"
+ctor = "0.2.8"
+async-std = { version = "1", features = ["attributes", "tokio1"] }

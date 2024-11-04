@@ -15,3 +15,6 @@ uuid.workspace = true
 
 starter = { path = "../../src/starter" }
 application = { path = "../../src/application" }
+
+[dev-dependencies]
+deadpool-postgres.workspace = true
