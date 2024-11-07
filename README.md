@@ -50,6 +50,31 @@ curl -v  http://localhost:8181/to-do-items
 
 ### Configuration
 To configure the microservice, you will need to modify the configuration file: config.app.toml.
+```toml
+[service]
+http_url = '127.0.0.1:8181'
+service_name = 'rust_template_service'
+
+[database]
+pg.user = 'postgres'
+pg.password = 'postgres'
+pg.host = '127.0.0.1'
+pg.port = 5432
+pg.dbname = 'rust_template_db'
+pg.pool.max_size = 16
+
+```
+You can also configure via environment variables.
+```bash
+export MICROSERVICE__SERVICE__HTTP_URL="127.0.0.1:8181"
+export MICROSERVICE__SERVICE__SERVICE_NAME="rust_template_service"
+export MICROSERVICE__DATABASE__PG__USER="postgres"
+export MICROSERVICE__DATABASE__PG__PASSWORD="postgres"
+export MICROSERVICE__DATABASE__PG__HOST="127.0.0.1"
+export MICROSERVICE__DATABASE__PG__PORT=5432
+export MICROSERVICE__DATABASE__PG__DBNAME="rust_template_db"
+export MICROSERVICE__DATABASE__PG__POOL__MAX_SIZE=16
+```
 
 ## Architecture
 The microservice is divided into three layers: the Domain Layer, the Application Layer, and the Infrastructure Layer.
@@ -88,6 +113,9 @@ CQRS (Command Query Responsibility Segregation) is a pattern that separates the 
     - [X] Add support for migrations
     - [X] CRUD Operation
 - [X] Integration tests
+- [X] Configuration
+    - [X] Configuration file
+    - [X] Environment variables
 - [ ] Advanced error handling
 - [ ] Coming soon :)
 

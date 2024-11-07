@@ -15,6 +15,7 @@ services:
       - rust-dev-network
     volumes:
       - postgres-rust:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "PGPASSWORD=postgres pg_isready -U postgres -h postgres"]
       interval: 10s

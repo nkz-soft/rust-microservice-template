@@ -3,30 +3,28 @@ use actix_web::dev::Server;
 use actix_web::{middleware, web, App, HttpServer};
 use deadpool_postgres::tokio_postgres::NoTls;
 use log::{debug, info};
+use anyhow::Result;
 
 mod settings;
 
-pub async fn run() -> Result<Server, std::io::Error> {
-    let _env_logger =
-        env_logger::try_init_from_env(env_logger::Env::new().default_filter_or("info"));
-    let settings = Settings::new().unwrap();
-    run_internal(&settings).await
+pub async fn run() -> Result<()> {
+    let settings = Settings::default().load()?;
+    run_internal(&settings).await?.await?;
+    Ok(())
 }
 
-pub async fn run_with_config(path: &str) -> Result<Server, std::io::Error> {
-    let _env_logger =
-        env_logger::try_init_from_env(env_logger::Env::new().default_filter_or("info"));
-    let settings = Settings::with_path(path).unwrap();
-    run_internal(&settings).await
+pub async fn run_with_config(path: &str) -> Result<()> {
+    let settings = Settings::with_path(path).load()?;
+    run_internal(&settings).await?.await?;
+    Ok(())
 }
-
-pub async fn run_internal(settings: &Settings) -> Result<Server, std::io::Error> {
-    info!("Starting HTTP server at {}", &settings.web_url);
+ async fn run_internal(settings: &Settings) -> Result<Server> {
+    info!("Starting HTTP server at {}", &settings.service.http_url);
     debug!("with configuration: {:?}", &settings);
 
-    let pool = settings.pg.create_pool(None, NoTls).unwrap();
+    let pool = settings.database.pg.create_pool(None, NoTls)?;
 
-    infrastructure::configure(&pool).await.unwrap();
+    infrastructure::configure(&pool).await?;
 
     let server = HttpServer::new(move || {
         App::new()
@@ -34,7 +32,7 @@ pub async fn run_internal(settings: &Settings) -> Result<Server, std::io::Error>
             .wrap(middleware::Logger::default())
             .configure(presentation::configure)
     })
-    .bind(&settings.web_url)?
+    .bind(&settings.service.http_url)?
     .run();
 
     Ok(server)

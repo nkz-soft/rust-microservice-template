@@ -1,7 +1,12 @@
-web_url = 'localhost:8181'
+[service]
+http_url = '127.0.0.1:8181'
+service_name = 'rust_template_service'
+
+[database]
 pg.user = 'postgres'
 pg.password = 'postgres'
 pg.host = '127.0.0.1'
 pg.port = 5432
 pg.dbname = 'rust_template_db'
 pg.pool.max_size = 16
+
