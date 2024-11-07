@@ -8,6 +8,7 @@ use starter::run;
 async fn main() -> Result<()> {
     dotenv::dotenv().ok();
     env_logger::init_from_env(env_logger::Env::default().filter_or("RUST_LOG", "info"));
+    run().await?.await?;
 
-    run().await
+    Ok(())
 }

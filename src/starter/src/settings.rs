@@ -69,6 +69,7 @@ mod tests {
     use std::env;
     use serial_test::serial;
 
+    #[serial]
     #[test]
     fn default_settings_test() {
         let settings = Settings::default();
@@ -93,10 +94,14 @@ mod tests {
     #[test]
     fn with_path_settings_override_env_test() {
         env::set_var("MICROSERVICE__SERVICE__HTTP_URL", "localhost:8080");
-        env::set_var("MICROSERVICE__DATABASE__PG__USER", "pg_user");
+        env::set_var("MICROSERVICE__DATABASE__PG.USER", "pg_user");
+        env::set_var("MICROSERVICE__DATABASE__PG.POOL.MAX_SIZE", "10");
         let settings = Settings::with_path("./../../").load().unwrap();
         assert_eq!(settings.service.http_url, "localhost:8080");
         assert_eq!(settings.database.pg.user.unwrap(), "pg_user");
-        env::remove_var("MICROSERVICE__SERVICE__HTTP_URL")
+        assert_eq!(settings.database.pg.pool.unwrap().max_size, 10);
+        env::remove_var("MICROSERVICE__SERVICE__HTTP_URL");
+        env::remove_var("MICROSERVICE__DATABASE__PG.USER");
+        env::remove_var("MICROSERVICE__DATABASE__PG.POOL.MAX_SIZE");
     }
 }
