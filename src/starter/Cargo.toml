@@ -1,6 +1,6 @@
 [package]
 name = "starter"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -16,6 +16,7 @@ deadpool-postgres.workspace = true
 tokio.workspace = true
 anyhow.workspace = true
 reqwest.workspace = true
+dotenv.workspace = true
 
 domain = { path = "../domain" }
 application = { path = "../application" }

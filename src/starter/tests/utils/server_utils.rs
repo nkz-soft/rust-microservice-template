@@ -1,6 +1,6 @@
-use std::time::Duration;
 use crate::tests::CONFIG_FILE_PATH;
 use ctor::dtor;
+use std::time::Duration;
 use testcontainers::core::IntoContainerPort;
 use testcontainers::{ContainerAsync, ImageExt};
 use testcontainers_modules::postgres::Postgres;
@@ -33,7 +33,7 @@ impl Server {
             .unwrap();
 
         let server_handle = tokio::spawn(async move {
-            let server = starter::run_with_config(&CONFIG_FILE_PATH)
+            let server = starter::run_with_config(CONFIG_FILE_PATH)
                 .await
                 .expect("Failed to bind address");
             let _server_task = tokio::spawn(server);

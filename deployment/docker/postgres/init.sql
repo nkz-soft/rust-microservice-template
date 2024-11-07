@@ -1,0 +1,1 @@
+CREATE DATABASE rust_template_db;
