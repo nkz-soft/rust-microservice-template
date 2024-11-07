@@ -1,6 +1,6 @@
-use std::time::Duration;
 use crate::tests::CONFIG_FILE_PATH;
 use ctor::dtor;
+use std::time::Duration;
 use testcontainers::core::IntoContainerPort;
 use testcontainers::{ContainerAsync, ImageExt};
 use testcontainers_modules::postgres::Postgres;

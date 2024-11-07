@@ -10,7 +10,6 @@ impl GetToDoItemQuery {
     }
 }
 
-///
 pub struct CreateToDoItemQuery {
     pub title: String,
     pub note: String,
@@ -25,7 +24,6 @@ impl CreateToDoItemQuery {
     }
 }
 
-///
 pub struct UpdateToDoItemQuery {
     pub id: Uuid,
     pub title: String,
@@ -42,7 +40,6 @@ impl UpdateToDoItemQuery {
     }
 }
 
-///
 pub struct DeleteToDoItemQuery {
     pub id: Uuid,
 }

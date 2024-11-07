@@ -50,13 +50,15 @@ impl Settings {
 
     pub fn load(&self) -> Result<Self, ConfigError> {
         let builder = Config::builder();
-        let full_path = self.path.clone().unwrap()  + CONFIG_FILE_NAME;
-        builder.add_source(File::with_name(full_path.as_str()).required(true))
-                .add_source(Environment::default()
-                .prefix(DEFAULT_ENV_PREFIX_NAME)
-                .prefix_separator("__")
-                .separator("__")
-                .try_parsing(true)
+        let full_path = self.path.clone().unwrap() + CONFIG_FILE_NAME;
+        builder
+            .add_source(File::with_name(full_path.as_str()).required(true))
+            .add_source(
+                Environment::default()
+                    .prefix(DEFAULT_ENV_PREFIX_NAME)
+                    .prefix_separator("__")
+                    .separator("__")
+                    .try_parsing(true),
             )
             .build()?
             .try_deserialize()
@@ -66,8 +68,8 @@ impl Settings {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::env;
     use serial_test::serial;
+    use std::env;
 
     #[serial]
     #[test]

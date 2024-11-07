@@ -6,7 +6,6 @@ use domain::entities::ToDoItem;
 use crate::queries::*;
 use crate::repositories::*;
 
-///
 pub struct GetToDoItemQueryHandler {
     repository: Rc<dyn ToDoItemRepository>,
 }
@@ -23,7 +22,6 @@ impl GetToDoItemQueryHandler {
     }
 }
 
-///
 pub struct GetAllToDoItemQueryHandler {
     repository: Rc<dyn ToDoItemRepository>,
 }
@@ -40,7 +38,6 @@ impl GetAllToDoItemQueryHandler {
     }
 }
 
-///
 pub struct CreateToDoItemQueryHandler {
     repository: Rc<dyn ToDoItemRepository>,
 }
@@ -60,7 +57,6 @@ impl CreateToDoItemQueryHandler {
     }
 }
 
-///
 pub struct UpdateToDoItemQueryHandler {
     repository: Rc<dyn ToDoItemRepository>,
 }
@@ -80,7 +76,6 @@ impl UpdateToDoItemQueryHandler {
     }
 }
 
-///
 pub struct DeleteToDoItemQueryHandler {
     repository: Rc<dyn ToDoItemRepository>,
 }
