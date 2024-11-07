@@ -33,7 +33,7 @@ impl Server {
             .unwrap();
 
         let server_handle = tokio::spawn(async move {
-            let server = starter::run_with_config(&CONFIG_FILE_PATH)
+            let server = starter::run_with_config(CONFIG_FILE_PATH)
                 .await
                 .expect("Failed to bind address");
             let _server_task = tokio::spawn(server);

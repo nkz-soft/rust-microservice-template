@@ -48,7 +48,7 @@ impl ToDoItemRepository for PostgresToDoItemRepository {
             .await
             .unwrap();
 
-        let row = rows.iter().next();
+        let row = rows.first();
         match row {
             Some(row) => {
                 let to_do_item = ToDoItem {
@@ -56,7 +56,7 @@ impl ToDoItemRepository for PostgresToDoItemRepository {
                     title: row.get(1),
                     note: row.get(2),
                 };
-                Ok(Some(to_do_item.try_into().unwrap()))
+                Ok(Some(to_do_item))
             }
             None => Ok(None),
         }
@@ -82,7 +82,7 @@ impl ToDoItemRepository for PostgresToDoItemRepository {
             .await
             .unwrap();
 
-        let row = rows.iter().next();
+        let row = rows.first();
         match row {
             Some(row) => {
                 let id = row.get(0);

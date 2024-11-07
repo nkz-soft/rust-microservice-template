@@ -9,12 +9,12 @@ mod settings;
 
 pub async fn run() -> Result<Server> {
     let settings = Settings::default().load()?;
-    Ok(run_internal(&settings).await?)
+    run_internal(&settings).await
 }
 
 pub async fn run_with_config(path: &str) -> Result<Server> {
     let settings = Settings::with_path(path).load()?;
-    Ok(run_internal(&settings).await?)
+    run_internal(&settings).await
 }
 async fn run_internal(settings: &Settings) -> Result<Server> {
     info!("Starting HTTP server at {}", &settings.service.http_url);
