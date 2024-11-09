@@ -116,13 +116,15 @@ CQRS (Command Query Responsibility Segregation) is a pattern that separates the 
 - [X] Configuration
     - [X] Configuration file
     - [X] Environment variables
+- [x] OpenAPI documentation
 - [ ] Advanced error handling
 - [ ] Coming soon :)
 
 ## Technologies used
 
-- [Rust](https://github.com/rust-lang/rust): The Rust Programming Language
-- [Actix](https://github.com/actix/actix-web): Actix Web is a powerful, pragmatic, and extremely fast web framework for Rust
+- [Rust](https://github.com/rust-lang/rust): The Rust Programming Language.
+- [Actix](https://github.com/actix/actix-web): Actix Web is a powerful, pragmatic, and extremely fast web framework for Rust.
 - [Refinery](https://github.com/rust-db/refinery): Refinery strives to make running migrations for different databases as easy as possible.
 - [rust-postgres](https://github.com/sfackler/rust-postgres): PostgreSQL support for Rust.
 - [testcontainers-rs](https://github.com/testcontainers/testcontainers-rs): Testcontainers-rs is the official Rust language fork of http://testcontainers.org.
+- [utoipa](https://github.com/juhaku/utoipa): Code first and compile time generated OpenAPI documentation for Rust APIs.

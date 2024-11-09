@@ -1,6 +1,6 @@
 [package]
 name = "starter"
-version = "0.5.0"
+version = "0.6.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -17,6 +17,9 @@ tokio.workspace = true
 anyhow.workspace = true
 reqwest.workspace = true
 dotenv.workspace = true
+utoipa.workspace = true
+utoipa-actix-web.workspace = true
+utoipa-swagger-ui.workspace = true
 
 domain = { path = "../domain" }
 application = { path = "../application" }

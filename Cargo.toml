@@ -9,7 +9,14 @@ members = [
 resolver = "2"
 
 [workspace.dependencies]
+
+# Web
 actix-web = "4.9.0"
+
+# OpenAPI
+utoipa = { version = "5.2.0", features = ["actix_extras", "uuid"] }
+utoipa-actix-web = "0.1.2"
+utoipa-swagger-ui = { version = "8.0.3", features = ["actix-web"] }
 
 serde = { version = "1.0.214", features = ["derive"] }
 serde_json = "1.0.132"
@@ -19,12 +26,12 @@ readonly = "0.2.12"
 tokio-postgres = { version = "0.7.12", features = ["with-uuid-1"] }
 postgres-types = { version = "0.2.8", features = ["uuid-1"] }
 refinery = { version = "0.8.14", features = ["tokio-postgres"] }
-tokio = { version = "1.41.0", features = ["full"] }
+tokio = { version = "1.41.1", features = ["full"] }
 async-trait = "0.1.83"
 deadpool-postgres = { version = "0.14.0", features = ["serde"] }
 quote = "1.0.37"
 syn = { version = "2.0.87", features = ["full"] }
-serial_test = "3.1.1"
+serial_test = "3.2.0"
 
 # Logging
 log = "0.4.22"
@@ -36,8 +43,8 @@ dotenv = "0.15.0"
 config = "0.14.1"
 
 # Error Handling
-anyhow = "1.0.92"
-thiserror = "1.0.68"
+anyhow = "1.0.93"
+thiserror = "2.0.1"
 
 # Testing
 testcontainers = "0.23.1"
