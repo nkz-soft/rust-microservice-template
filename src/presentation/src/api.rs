@@ -44,7 +44,10 @@ pub async fn get_all(req: HttpRequest) -> Result<HttpResponse, Error> {
     tag = TODO,
     responses(
         (status = 200, description = "Get todo item by id", body = [ToDoItemResponse])
-    )
+    ),
+    params(
+        ("id" = Uuid, Path, description = "Id of the to-do item")
+    ),
 )]
 #[get("/{id}")]
 pub async fn get_by_id(req: HttpRequest, _id: web::Path<Uuid>) -> Result<HttpResponse, Error> {
@@ -70,7 +73,8 @@ pub async fn get_by_id(req: HttpRequest, _id: web::Path<Uuid>) -> Result<HttpRes
     tag = TODO,
     responses(
         (status = 200, description = "Create todo item", body = [ToDoItemResponse])
-    )
+    ),
+    request_body = CreateToDoItemRequest,
 )]
 #[post("")]
 pub async fn create(
@@ -98,7 +102,11 @@ pub async fn create(
     tag = TODO,
     responses(
         (status = 200, description = "Update todo item", body = [ToDoItemResponse])
-    )
+    ),
+    params(
+        ("id", description = "Id of the to-do item to update")
+    ),
+    request_body = UpdateToDoItemRequest,
 )]
 #[put("/{id}")]
 pub async fn update(
@@ -129,6 +137,9 @@ pub async fn update(
     tag = TODO,
     responses(
         (status = 200, description = "Delete todo item", body = [ToDoItemResponse])
+    ),
+    params(
+        ("id", description = "Id of the to-do item to delete")
     )
 )]
 #[delete("/{id}")]

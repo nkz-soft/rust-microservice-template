@@ -6,7 +6,10 @@ use uuid::Uuid;
 #[readonly::make]
 #[derive(Deserialize, Serialize, ToSchema)]
 pub struct ToDoItemResponse {
+    /// The id of the to-do item
     pub id: Uuid,
+    /// The title of the to-do item
     pub title: String,
+    /// The note of the to-do item
     pub note: String,
 }
