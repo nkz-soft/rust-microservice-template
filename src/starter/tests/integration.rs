@@ -9,11 +9,12 @@ mod tests {
     use uuid::Uuid;
 
     pub(crate) const CONFIG_FILE_PATH: &str = "./../../";
+    const WEB_SERVER_PATH: &str = "http://localhost:8181/";
     #[serial]
     #[tokio::test]
     async fn start_server_and_test() {
         let client = prepare_test_environment!();
-        assert!(client.get("http://localhost:8181").send().await.is_ok());
+        assert!(client.get(WEB_SERVER_PATH).send().await.is_ok());
     }
 
     #[serial]
@@ -23,7 +24,7 @@ mod tests {
 
         // Act
         let response = client
-            .get("http://localhost:8181/to-do-items")
+            .get(WEB_SERVER_PATH.to_owned() + "to-do-items")
             .send()
             .await
             .expect("Failed to execute request.");
@@ -42,7 +43,7 @@ mod tests {
 
         // Act
         let id = client
-            .post("http://localhost:8181/to-do-items")
+            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
             .json(&map_create)
             .send()
             .await
@@ -52,7 +53,7 @@ mod tests {
             .expect("Failed to deserialize response.");
 
         let response = client
-            .get(format!("http://localhost:8181/to-do-items/{id}", id = id))
+            .get(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}", id = id).as_str())
             .send()
             .await
             .expect("Failed to execute request.");
@@ -71,7 +72,7 @@ mod tests {
 
         // Act
         let response = client
-            .post("http://localhost:8181/to-do-items")
+            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
             .json(&map)
             .send()
             .await
@@ -91,7 +92,7 @@ mod tests {
 
         // Act
         let id = client
-            .post("http://localhost:8181/to-do-items")
+            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
             .json(&map_create)
             .send()
             .await
@@ -101,12 +102,11 @@ mod tests {
             .expect("Failed to deserialize response.");
 
         let mut map_update = HashMap::new();
-        map_update.insert("id", id.to_string());
         map_update.insert("title", String::from("title1"));
         map_update.insert("note", String::from("note1"));
 
         let response = client
-            .put("http://localhost:8181/to-do-items")
+            .put(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}", id = id).as_str())
             .json(&map_update)
             .send()
             .await
@@ -126,7 +126,7 @@ mod tests {
 
         // Act
         let id = client
-            .post("http://localhost:8181/to-do-items")
+            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
             .json(&map_create)
             .send()
             .await
@@ -136,7 +136,7 @@ mod tests {
             .expect("Failed to deserialize response.");
 
         let response = client
-            .delete(format!("http://localhost:8181/to-do-items/{id}", id = id))
+            .delete(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}", id = id).as_str())
             .send()
             .await
             .expect("Failed to execute request.");
