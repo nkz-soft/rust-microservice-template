@@ -5,8 +5,8 @@ use async_trait::async_trait;
 use deadpool_postgres::Pool;
 use uuid::Uuid;
 
-use domain::entities::ToDoItem;
 use crate::errors::Error::ItemNotFound;
+use domain::entities::ToDoItem;
 
 pub struct PostgresToDoItemRepository {
     pool: Data<Pool>,

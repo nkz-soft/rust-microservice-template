@@ -7,11 +7,11 @@ use uuid::Uuid;
 
 use deadpool_postgres::Pool;
 
-use application::queries::*;
-use infrastructure::postgres_repositories::*;
 use crate::errors::ApiError;
 use crate::requests::{CreateToDoItemRequest, UpdateToDoItemRequest};
 use crate::responses::ToDoItemResponse;
+use application::queries::*;
+use infrastructure::postgres_repositories::*;
 
 const TODO: &str = "todo";
 

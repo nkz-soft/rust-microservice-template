@@ -7,9 +7,7 @@ pub async fn configure(pool: &Pool) -> anyhow::Result<()> {
     let mut obj = pool.get().await?;
     let client = obj.deref_mut().deref_mut();
 
-    migration::migrations::runner()
-        .run_async(client)
-        .await?;
+    migration::migrations::runner().run_async(client).await?;
 
     Ok(())
 }

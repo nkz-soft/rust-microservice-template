@@ -9,10 +9,9 @@ pub enum ApiError {
 }
 
 impl ResponseError for ApiError {
-
     fn status_code(&self) -> StatusCode {
         match &self {
-            Self::InternalError(_) => StatusCode::INTERNAL_SERVER_ERROR
+            Self::InternalError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 
@@ -20,4 +19,3 @@ impl ResponseError for ApiError {
         HttpResponse::build(self.status_code()).body(self.to_string())
     }
 }
-
