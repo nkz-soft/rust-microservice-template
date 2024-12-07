@@ -9,7 +9,7 @@ use deadpool_postgres::Pool;
 
 use application::queries::*;
 use infrastructure::postgres_repositories::*;
-
+use crate::errors::ApiError;
 use crate::requests::{CreateToDoItemRequest, UpdateToDoItemRequest};
 use crate::responses::ToDoItemResponse;
 
@@ -31,7 +31,7 @@ pub async fn get_all(req: HttpRequest) -> Result<HttpResponse, Error> {
 
     let get_handler = application::handlers::GetAllToDoItemQueryHandler::new(Rc::new(repository));
 
-    let data = get_handler.execute().await;
+    let data = get_handler.execute().await.unwrap();
 
     Ok(HttpResponse::Ok()
         .content_type(http::header::ContentType::json())
@@ -80,7 +80,7 @@ pub async fn get_by_id(req: HttpRequest, _id: web::Path<Uuid>) -> Result<HttpRes
 pub async fn create(
     req: HttpRequest,
     item: web::Json<CreateToDoItemRequest>,
-) -> Result<HttpResponse, Error> {
+) -> Result<HttpResponse, ApiError> {
     let pool = req.app_data::<Data<Pool>>().unwrap();
 
     let repository = PostgresToDoItemRepository::new(&pool.clone());
@@ -89,11 +89,11 @@ pub async fn create(
 
     let data = get_handler
         .execute(CreateToDoItemQuery::new(&item.title, &item.title))
-        .await;
+        .await?;
 
     Ok(HttpResponse::Ok()
         .content_type(http::header::ContentType::json())
-        .body(serde_json::to_string(&data)?))
+        .body(serde_json::to_string(&data).unwrap()))
 }
 
 /// Updates a to-do item by Id.
@@ -113,7 +113,7 @@ pub async fn update(
     req: HttpRequest,
     id: web::Path<Uuid>,
     item: web::Json<UpdateToDoItemRequest>,
-) -> Result<HttpResponse, Error> {
+) -> Result<HttpResponse, ApiError> {
     let pool = req.app_data::<Data<Pool>>().unwrap();
 
     let repository = PostgresToDoItemRepository::new(&pool.clone());
@@ -126,7 +126,7 @@ pub async fn update(
             &item.title,
             &item.note,
         ))
-        .await;
+        .await?;
 
     Ok(HttpResponse::from(HttpResponse::Ok()))
 }
@@ -143,7 +143,7 @@ pub async fn update(
     )
 )]
 #[delete("/{id}")]
-pub async fn delete(req: HttpRequest, _id: web::Path<Uuid>) -> Result<HttpResponse, Error> {
+pub async fn delete(req: HttpRequest, _id: web::Path<Uuid>) -> Result<HttpResponse, ApiError> {
     let pool = req.app_data::<Data<Pool>>().unwrap();
 
     let repository = PostgresToDoItemRepository::new(&pool.clone());
@@ -152,6 +152,7 @@ pub async fn delete(req: HttpRequest, _id: web::Path<Uuid>) -> Result<HttpRespon
 
     get_handler
         .execute(DeleteToDoItemQuery::new(_id.into_inner()))
-        .await;
+        .await?;
+
     Ok(HttpResponse::from(HttpResponse::Ok()))
 }

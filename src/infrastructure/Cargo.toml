@@ -13,6 +13,8 @@ async-trait.workspace = true
 deadpool-postgres.workspace = true
 actix-web.workspace = true
 uuid.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
 
 domain = { path = "../domain" }
 application = { path = "../application" }

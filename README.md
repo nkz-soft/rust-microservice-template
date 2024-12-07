@@ -117,7 +117,7 @@ CQRS (Command Query Responsibility Segregation) is a pattern that separates the 
     - [X] Configuration file
     - [X] Environment variables
 - [x] OpenAPI documentation
-- [ ] Advanced error handling
+- [x] Advanced error handling
 - [ ] Coming soon :)
 
 ## Technologies used

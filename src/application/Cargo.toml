@@ -14,5 +14,6 @@ deadpool-postgres.workspace = true
 tokio-postgres.workspace = true
 postgres-types.workspace = true
 uuid.workspace = true
+anyhow.workspace = true
 
 domain = { path = "../domain" }

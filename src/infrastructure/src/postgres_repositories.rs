@@ -6,6 +6,7 @@ use deadpool_postgres::Pool;
 use uuid::Uuid;
 
 use domain::entities::ToDoItem;
+use crate::errors::Error::ItemNotFound;
 
 pub struct PostgresToDoItemRepository {
     pool: Data<Pool>,
@@ -19,8 +20,8 @@ impl PostgresToDoItemRepository {
 
 #[async_trait]
 impl ToDoItemRepository for PostgresToDoItemRepository {
-    async fn get_all(&self) -> Result<Vec<ToDoItem>, String> {
-        let client = self.pool.get().await.unwrap();
+    async fn get_all(&self) -> anyhow::Result<Vec<ToDoItem>> {
+        let client = self.pool.get().await?;
 
         let rows = client
             .query(
@@ -29,14 +30,13 @@ impl ToDoItemRepository for PostgresToDoItemRepository {
                 "#,
                 &[],
             )
-            .await
-            .unwrap();
+            .await?;
 
         Ok(ToDoItemMapper::from_vec(rows))
     }
 
-    async fn get_by_id(&self, _id: Uuid) -> Result<Option<ToDoItem>, String> {
-        let client = self.pool.get().await.unwrap();
+    async fn get_by_id(&self, _id: Uuid) -> anyhow::Result<Option<ToDoItem>> {
+        let client = self.pool.get().await?;
 
         let rows = client
             .query(
@@ -45,8 +45,7 @@ impl ToDoItemRepository for PostgresToDoItemRepository {
             "#,
                 &[&_id],
             )
-            .await
-            .unwrap();
+            .await?;
 
         let row = rows.first();
         match row {
@@ -58,12 +57,12 @@ impl ToDoItemRepository for PostgresToDoItemRepository {
                 };
                 Ok(Some(to_do_item))
             }
-            None => Ok(None),
+            None => Err(ItemNotFound { id: _id }.into()),
         }
     }
 
-    async fn save(&self, _entity: ToDoItem) -> Result<Uuid, String> {
-        let client = self.pool.get().await.unwrap();
+    async fn save(&self, _entity: ToDoItem) -> anyhow::Result<Uuid> {
+        let client = self.pool.get().await?;
 
         let id = _entity.id;
         let title = _entity.title;
@@ -79,8 +78,7 @@ impl ToDoItemRepository for PostgresToDoItemRepository {
             "#,
                 &[&id, &title, &note],
             )
-            .await
-            .unwrap();
+            .await?;
 
         let row = rows.first();
         match row {
@@ -88,12 +86,12 @@ impl ToDoItemRepository for PostgresToDoItemRepository {
                 let id = row.get(0);
                 Ok(id)
             }
-            None => Err(String::from("Could not save item.")),
+            None => Err(ItemNotFound { id: _entity.id }.into()),
         }
     }
 
-    async fn delete(&self, id: Uuid) -> Result<(), String> {
-        let client = self.pool.get().await.unwrap();
+    async fn delete(&self, id: Uuid) -> anyhow::Result<()> {
+        let client = self.pool.get().await?;
 
         client
             .execute(
@@ -102,8 +100,7 @@ impl ToDoItemRepository for PostgresToDoItemRepository {
             "#,
                 &[&id],
             )
-            .await
-            .unwrap();
+            .await?;
 
         Ok(())
     }
