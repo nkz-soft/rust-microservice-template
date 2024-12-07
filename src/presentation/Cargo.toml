@@ -14,7 +14,10 @@ readonly.workspace = true
 uuid.workspace = true
 utoipa.workspace = true
 utoipa-actix-web.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
 
 application = { path = "../application" }
 infrastructure = { path = "../infrastructure" }
 domain = { path = "../domain" }
+

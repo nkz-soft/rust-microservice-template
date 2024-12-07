@@ -20,6 +20,7 @@ pub async fn run_with_config(path: &str) -> Result<Server> {
     let settings = Settings::with_path(path).load()?;
     run_internal(&settings).await
 }
+
 async fn run_internal(settings: &Settings) -> Result<Server> {
     info!("Starting HTTP server at {}", &settings.service.http_url);
     debug!("with configuration: {:?}", &settings);

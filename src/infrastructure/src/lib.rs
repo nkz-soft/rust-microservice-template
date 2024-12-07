@@ -3,4 +3,5 @@ pub use self::config::configure;
 
 pub mod postgres_repositories;
 
+mod errors;
 mod migration;

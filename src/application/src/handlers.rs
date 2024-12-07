@@ -17,8 +17,8 @@ impl GetToDoItemQueryHandler {
         }
     }
 
-    pub async fn execute(&self, query: GetToDoItemQuery) -> Option<ToDoItem> {
-        self.repository.get_by_id(query.id.unwrap()).await.unwrap()
+    pub async fn execute(&self, query: GetToDoItemQuery) -> anyhow::Result<Option<ToDoItem>> {
+        self.repository.get_by_id(query.id.unwrap()).await
     }
 }
 
@@ -33,8 +33,8 @@ impl GetAllToDoItemQueryHandler {
         }
     }
 
-    pub async fn execute(&self) -> Vec<ToDoItem> {
-        self.repository.get_all().await.unwrap()
+    pub async fn execute(&self) -> anyhow::Result<Vec<ToDoItem>> {
+        self.repository.get_all().await
     }
 }
 
@@ -49,11 +49,10 @@ impl CreateToDoItemQueryHandler {
         }
     }
 
-    pub async fn execute(&self, query: CreateToDoItemQuery) -> Uuid {
+    pub async fn execute(&self, query: CreateToDoItemQuery) -> anyhow::Result<Uuid> {
         self.repository
             .save(ToDoItem::new(query.title, query.note))
             .await
-            .unwrap()
     }
 }
 
@@ -68,11 +67,10 @@ impl UpdateToDoItemQueryHandler {
         }
     }
 
-    pub async fn execute(&self, query: UpdateToDoItemQuery) -> Uuid {
+    pub async fn execute(&self, query: UpdateToDoItemQuery) -> anyhow::Result<Uuid> {
         self.repository
             .save(ToDoItem::new_id(query.id, query.title, query.note))
             .await
-            .unwrap()
     }
 }
 
@@ -87,7 +85,7 @@ impl DeleteToDoItemQueryHandler {
         }
     }
 
-    pub async fn execute(&self, query: DeleteToDoItemQuery) {
-        self.repository.delete(query.id).await.unwrap()
+    pub async fn execute(&self, query: DeleteToDoItemQuery) -> anyhow::Result<()> {
+        self.repository.delete(query.id).await
     }
 }
