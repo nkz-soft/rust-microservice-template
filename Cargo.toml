@@ -36,7 +36,7 @@ serial_test = "3.2.0"
 # Logging
 log = "0.4.22"
 pretty_env_logger = "0.5.0"
-env_logger = "0.11.5"
+env_logger = "0.11.6"
 
 # Configuration
 dotenv = "0.15.0"
