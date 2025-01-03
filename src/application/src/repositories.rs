@@ -5,7 +5,7 @@ use uuid::Uuid;
 #[async_trait]
 pub trait ToDoItemRepository {
     async fn get_all(&self) -> anyhow::Result<Vec<ToDoItem>>;
-    async fn get_by_id(&self, id: Uuid) -> anyhow::Result<Option<ToDoItem>>;
+    async fn get_by_id(&self, id: Uuid) -> anyhow::Result<ToDoItem>;
     async fn save(&self, entity: ToDoItem) -> anyhow::Result<Uuid>;
     async fn delete(&self, id: Uuid) -> anyhow::Result<()>;
 }

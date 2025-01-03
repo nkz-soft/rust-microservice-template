@@ -17,7 +17,7 @@ impl GetToDoItemQueryHandler {
         }
     }
 
-    pub async fn execute(&self, query: GetToDoItemQuery) -> anyhow::Result<Option<ToDoItem>> {
+    pub async fn execute(&self, query: GetToDoItemQuery) -> anyhow::Result<ToDoItem> {
         self.repository.get_by_id(query.id.unwrap()).await
     }
 }

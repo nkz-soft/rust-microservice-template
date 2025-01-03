@@ -1,18 +1,14 @@
 [package]
 name = "starter"
-version = "0.5.1"
+version = "0.5.2"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 log.workspace = true
-serde.workspace = true
 env_logger.workspace = true
 actix-web.workspace = true
-config.workspace = true
-readonly.workspace = true
-deadpool-postgres.workspace = true
 tokio.workspace = true
 anyhow.workspace = true
 reqwest.workspace = true
@@ -21,7 +17,6 @@ utoipa.workspace = true
 utoipa-actix-web.workspace = true
 utoipa-swagger-ui.workspace = true
 
-domain = { path = "../domain" }
 application = { path = "../application" }
 presentation = { path = "../presentation" }
 infrastructure = { path = "../infrastructure" }
@@ -30,7 +25,5 @@ infrastructure = { path = "../infrastructure" }
 testcontainers.workspace = true
 testcontainers-modules.workspace = true
 ctor.workspace = true
-async-std.workspace = true
 serial_test.workspace = true
-once_cell.workspace = true
 uuid.workspace = true

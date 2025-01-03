@@ -9,15 +9,12 @@ edition = "2021"
 actix-web.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-deadpool-postgres.workspace = true
 readonly.workspace = true
 uuid.workspace = true
 utoipa.workspace = true
-utoipa-actix-web.workspace = true
 thiserror.workspace = true
 anyhow.workspace = true
 
 application = { path = "../application" }
 infrastructure = { path = "../infrastructure" }
-domain = { path = "../domain" }
 

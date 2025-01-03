@@ -7,5 +7,5 @@ edition = "2021"
 
 [dependencies]
 serde.workspace = true
-async-trait.workspace = true
 uuid.workspace = true
+diesel.workspace = true

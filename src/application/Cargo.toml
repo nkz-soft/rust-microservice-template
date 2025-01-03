@@ -9,11 +9,12 @@ edition = "2021"
 readonly.workspace = true
 serde.workspace = true
 async-trait.workspace = true
-actix-web.workspace = true
-deadpool-postgres.workspace = true
 tokio-postgres.workspace = true
-postgres-types.workspace = true
 uuid.workspace = true
 anyhow.workspace = true
+config.workspace = true
 
 domain = { path = "../domain" }
+
+[dev-dependencies]
+serial_test.workspace = true

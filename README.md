@@ -56,24 +56,14 @@ http_url = '127.0.0.1:8181'
 service_name = 'rust_template_service'
 
 [database]
-pg.user = 'postgres'
-pg.password = 'postgres'
-pg.host = '127.0.0.1'
-pg.port = 5432
-pg.dbname = 'rust_template_db'
-pg.pool.max_size = 16
+database_url = 'postgres://postgres:postgres@localhost:5432/rust_template_db'
 
 ```
 You can also configure via environment variables.
 ```bash
 export MICROSERVICE__SERVICE__HTTP_URL="127.0.0.1:8181"
 export MICROSERVICE__SERVICE__SERVICE_NAME="rust_template_service"
-export MICROSERVICE__DATABASE__PG.USER="postgres"
-export MICROSERVICE__DATABASE__PG.PASSWORD="postgres"
-export MICROSERVICE__DATABASE__PG.HOST="127.0.0.1"
-export MICROSERVICE__DATABASE__PG.PORT=5432
-export MICROSERVICE__DATABASE__PG.DBNAME="rust_template_db"
-export MICROSERVICE__DATABASE__PG.POOL.MAX_SIZE=16
+export MICROSERVICE__DATABASE__DATABASE_URL="postgres://postgres:postgres@localhost:5432/rust_template_db"
 ```
 
 ## Architecture
@@ -95,8 +85,6 @@ This can include things like databases, message queues, and external APIs.
 The presentation layer is responsible for handling user interactions and presenting information to users.
 This layer typically includes user interfaces such as web applications, desktop applications, mobile apps, or APIs.
 
-
-
 ### CQRS
 CQRS (Command Query Responsibility Segregation) is a pattern that separates the read and write responsibilities of an application into separate models.
 
@@ -109,7 +97,7 @@ CQRS (Command Query Responsibility Segregation) is a pattern that separates the 
 - [x] Docker compose
 - [x] REST API
 - [x] CQRS (Command Query Responsibility Segregation)
-- [x] PostgreSQL storage
+- [x] PostgreSQL storage with diesel
     - [X] Add support for migrations
     - [X] CRUD Operation
 - [X] Integration tests
@@ -128,3 +116,5 @@ CQRS (Command Query Responsibility Segregation) is a pattern that separates the 
 - [rust-postgres](https://github.com/sfackler/rust-postgres): PostgreSQL support for Rust.
 - [testcontainers-rs](https://github.com/testcontainers/testcontainers-rs): Testcontainers-rs is the official Rust language fork of http://testcontainers.org.
 - [utoipa](https://github.com/juhaku/utoipa): Code first and compile time generated OpenAPI documentation for Rust APIs.
+- [diesel](https://github.com/diesel-rs/diesel): Diesel is a Rust ORM and query builder.
+- [diesel_migrations](https://github.com/diesel-rs/diesel_migrations): Diesel migrations for Rust.

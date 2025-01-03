@@ -24,23 +24,22 @@ serde_json = "1.0.134"
 uuid = { version = "1.11.0", features = ["v4", "serde"] }
 readonly = "0.2.12"
 tokio-postgres = { version = "0.7.12", features = ["with-uuid-1"] }
-postgres-types = { version = "0.2.8", features = ["uuid-1"] }
-refinery = { version = "0.8.14", features = ["tokio-postgres"] }
+
 tokio = { version = "1.42.0", features = ["full"] }
 async-trait = "0.1.83"
-deadpool-postgres = { version = "0.14.0", features = ["serde"] }
-quote = "1.0.37"
-syn = { version = "2.0.90", features = ["full"] }
 serial_test = "3.2.0"
+
+# Database
+diesel = { version = "2.0.0", features = ["postgres", "r2d2", "uuid"] }
+diesel_migrations = "2.0.0"
 
 # Logging
 log = "0.4.22"
-pretty_env_logger = "0.5.0"
 env_logger = "0.11.6"
 
 # Configuration
 dotenv = "0.15.0"
-config = "0.14.1"
+config = "0.15.4"
 
 # Error Handling
 anyhow = "1.0.95"
