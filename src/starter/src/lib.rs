@@ -1,15 +1,12 @@
-use crate::settings::Settings;
 use actix_web::dev::Server;
 use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpServer};
 use anyhow::Result;
-use deadpool_postgres::tokio_postgres::NoTls;
+use application::settings::Settings;
 use log::{debug, info};
 use utoipa::OpenApi;
 use utoipa_actix_web::AppExt;
 use utoipa_swagger_ui::SwaggerUi;
-
-mod settings;
 
 pub async fn run() -> Result<Server> {
     let settings = Settings::default().load()?;
@@ -25,9 +22,7 @@ async fn run_internal(settings: &Settings) -> Result<Server> {
     info!("Starting HTTP server at {}", &settings.service.http_url);
     debug!("with configuration: {:?}", &settings);
 
-    let pool = settings.database.pg.create_pool(None, NoTls)?;
-
-    infrastructure::configure(&pool).await?;
+    let pool = infrastructure::configure(settings).await?;
 
     let server = HttpServer::new(move || {
         App::new()

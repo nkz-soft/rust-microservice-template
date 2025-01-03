@@ -1,19 +1,22 @@
+use crate::errors::Error::ItemNotFound;
+use crate::DbPool;
 use actix_web::web::Data;
-use application::mappers::ToDoItemMapper;
+use anyhow::anyhow;
 use application::repositories::ToDoItemRepository;
 use async_trait::async_trait;
-use deadpool_postgres::Pool;
+use diesel::ExpressionMethods;
+use diesel::{OptionalExtension, QueryDsl, RunQueryDsl};
+use domain::entities::ToDoItem;
+use domain::schema::to_do_items::dsl::to_do_items;
+use domain::schema::to_do_items::id;
 use uuid::Uuid;
 
-use crate::errors::Error::ItemNotFound;
-use domain::entities::ToDoItem;
-
 pub struct PostgresToDoItemRepository {
-    pool: Data<Pool>,
+    pool: Data<DbPool>,
 }
 
 impl PostgresToDoItemRepository {
-    pub fn new(pool: &Data<Pool>) -> Self {
+    pub fn new(pool: &Data<DbPool>) -> Self {
         Self { pool: pool.clone() }
     }
 }
@@ -21,87 +24,34 @@ impl PostgresToDoItemRepository {
 #[async_trait]
 impl ToDoItemRepository for PostgresToDoItemRepository {
     async fn get_all(&self) -> anyhow::Result<Vec<ToDoItem>> {
-        let client = self.pool.get().await?;
-
-        let rows = client
-            .query(
-                r#"
-                SELECT *  FROM to_do_items;
-                "#,
-                &[],
-            )
-            .await?;
-
-        Ok(ToDoItemMapper::from_vec(rows))
+        let mut connection = self.pool.get()?;
+        let items = to_do_items.load(&mut connection)?;
+        Ok(items)
     }
 
-    async fn get_by_id(&self, _id: Uuid) -> anyhow::Result<Option<ToDoItem>> {
-        let client = self.pool.get().await?;
-
-        let rows = client
-            .query(
-                r#"
-            SELECT *  FROM to_do_items WHERE id = $1;
-            "#,
-                &[&_id],
-            )
-            .await?;
-
-        let row = rows.first();
-        match row {
-            Some(row) => {
-                let to_do_item = ToDoItem {
-                    id: row.get(0),
-                    title: row.get(1),
-                    note: row.get(2),
-                };
-                Ok(Some(to_do_item))
-            }
-            None => Err(ItemNotFound { id: _id }.into()),
-        }
+    async fn get_by_id(&self, item_id: Uuid) -> anyhow::Result<ToDoItem> {
+        let mut connection = self.pool.get()?;
+        to_do_items
+            .filter(id.eq(&item_id))
+            .first::<ToDoItem>(&mut connection)
+            .optional()?
+            .ok_or(anyhow!(ItemNotFound { id: item_id }))
     }
 
-    async fn save(&self, _entity: ToDoItem) -> anyhow::Result<Uuid> {
-        let client = self.pool.get().await?;
-
-        let id = _entity.id;
-        let title = _entity.title;
-        let note = _entity.note;
-        let rows = client
-            .query(
-                r#"
-            INSERT INTO to_do_items (id, title, note)
-            VALUES ($1, $2, $3)
-            ON CONFLICT(id)
-            DO UPDATE SET title = $2, note = $3
-            RETURNING id;
-            "#,
-                &[&id, &title, &note],
-            )
-            .await?;
-
-        let row = rows.first();
-        match row {
-            Some(row) => {
-                let id = row.get(0);
-                Ok(id)
-            }
-            None => Err(ItemNotFound { id: _entity.id }.into()),
-        }
+    async fn save(&self, entity: ToDoItem) -> anyhow::Result<Uuid> {
+        let mut connection = self.pool.get()?;
+        diesel::insert_into(to_do_items)
+            .values(&entity)
+            .on_conflict(id)
+            .do_update()
+            .set(&entity)
+            .execute(&mut connection)?;
+        Ok(entity.id)
     }
 
-    async fn delete(&self, id: Uuid) -> anyhow::Result<()> {
-        let client = self.pool.get().await?;
-
-        client
-            .execute(
-                r#"
-            DELETE FROM to_do_items WHERE id = $1;
-            "#,
-                &[&id],
-            )
-            .await?;
-
+    async fn delete(&self, item_id: Uuid) -> anyhow::Result<()> {
+        let mut connection = self.pool.get()?;
+        diesel::delete(to_do_items.filter(id.eq(&item_id))).execute(&mut connection)?;
         Ok(())
     }
 }

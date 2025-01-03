@@ -5,13 +5,12 @@ use std::rc::Rc;
 
 use uuid::Uuid;
 
-use deadpool_postgres::Pool;
-
 use crate::errors::ApiError;
 use crate::requests::{CreateToDoItemRequest, UpdateToDoItemRequest};
 use crate::responses::ToDoItemResponse;
 use application::queries::*;
 use infrastructure::postgres_repositories::*;
+use infrastructure::DbPool;
 
 const TODO: &str = "todo";
 
@@ -25,7 +24,7 @@ const TODO: &str = "todo";
 )]
 #[get("")]
 pub async fn get_all(req: HttpRequest) -> Result<HttpResponse, Error> {
-    let pool = req.app_data::<Data<Pool>>().unwrap();
+    let pool = req.app_data::<Data<DbPool>>().unwrap();
 
     let repository = PostgresToDoItemRepository::new(&pool.clone());
 
@@ -51,7 +50,7 @@ pub async fn get_all(req: HttpRequest) -> Result<HttpResponse, Error> {
 )]
 #[get("/{id}")]
 pub async fn get_by_id(req: HttpRequest, _id: web::Path<Uuid>) -> Result<HttpResponse, Error> {
-    let pool = req.app_data::<Data<Pool>>().unwrap();
+    let pool = req.app_data::<Data<DbPool>>().unwrap();
 
     let repository = PostgresToDoItemRepository::new(&pool.clone());
 
@@ -81,7 +80,7 @@ pub async fn create(
     req: HttpRequest,
     item: web::Json<CreateToDoItemRequest>,
 ) -> Result<HttpResponse, ApiError> {
-    let pool = req.app_data::<Data<Pool>>().unwrap();
+    let pool = req.app_data::<Data<DbPool>>().unwrap();
 
     let repository = PostgresToDoItemRepository::new(&pool.clone());
 
@@ -114,7 +113,7 @@ pub async fn update(
     id: web::Path<Uuid>,
     item: web::Json<UpdateToDoItemRequest>,
 ) -> Result<HttpResponse, ApiError> {
-    let pool = req.app_data::<Data<Pool>>().unwrap();
+    let pool = req.app_data::<Data<DbPool>>().unwrap();
 
     let repository = PostgresToDoItemRepository::new(&pool.clone());
 
@@ -144,7 +143,7 @@ pub async fn update(
 )]
 #[delete("/{id}")]
 pub async fn delete(req: HttpRequest, _id: web::Path<Uuid>) -> Result<HttpResponse, ApiError> {
-    let pool = req.app_data::<Data<Pool>>().unwrap();
+    let pool = req.app_data::<Data<DbPool>>().unwrap();
 
     let repository = PostgresToDoItemRepository::new(&pool.clone());
 

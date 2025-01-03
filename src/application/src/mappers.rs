@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use domain::entities::ToDoItem;
 use tokio_postgres::Row;
 

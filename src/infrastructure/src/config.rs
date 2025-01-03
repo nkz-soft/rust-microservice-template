@@ -1,13 +1,16 @@
-use deadpool_postgres::Pool;
-use std::ops::DerefMut;
+use application::settings::Settings;
+use diesel::r2d2::{ConnectionManager, Pool};
+use diesel::{prelude::*, r2d2};
+use diesel_migrations::*;
 
-use crate::migration;
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./src/migrations");
 
-pub async fn configure(pool: &Pool) -> anyhow::Result<()> {
-    let mut obj = pool.get().await?;
-    let client = obj.deref_mut().deref_mut();
+type DbPool = r2d2::Pool<r2d2::ConnectionManager<PgConnection>>;
 
-    migration::migrations::runner().run_async(client).await?;
+pub async fn configure(settings: &Settings) -> anyhow::Result<DbPool> {
+    let mut connection = PgConnection::establish(settings.database.database_url.as_str())?;
+    connection.run_pending_migrations(MIGRATIONS).unwrap();
 
-    Ok(())
+    let manager = ConnectionManager::<PgConnection>::new(settings.database.database_url.as_str());
+    Ok(Pool::builder().build(manager)?)
 }

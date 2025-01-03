@@ -22,7 +22,7 @@ pub struct Service {
 #[readonly::make]
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Database {
-    pub pg: deadpool_postgres::Config,
+    pub database_url: String,
 }
 
 impl Default for Settings {
@@ -33,7 +33,7 @@ impl Default for Settings {
                 service_name: DEFAULT_ENV_PREFIX_NAME.to_string(),
             },
             database: Database {
-                pg: deadpool_postgres::Config::default(),
+                database_url: "postgres://postgres:postgres@localhost:5432/rust_template_db".into(),
             },
             path: Some("./".into()),
         }
@@ -85,25 +85,27 @@ mod tests {
         let settings = Settings::with_path("./../../").load().unwrap();
         assert_eq!(settings.service.http_url, "127.0.0.1:8181");
         assert_eq!(settings.service.service_name, "rust_template_service");
-        assert_eq!(settings.database.pg.host.unwrap(), "127.0.0.1");
-        assert_eq!(settings.database.pg.port.unwrap(), 5432);
-        assert_eq!(settings.database.pg.user.unwrap(), "postgres");
-        assert_eq!(settings.database.pg.password.unwrap(), "postgres");
-        assert_eq!(settings.database.pg.dbname.unwrap(), "rust_template_db");
+        assert_eq!(
+            settings.database.database_url,
+            "postgres://postgres:postgres@localhost:5432/rust_template_db"
+        );
     }
 
     #[serial]
     #[test]
     fn with_path_settings_override_env_test() {
         env::set_var("MICROSERVICE__SERVICE__HTTP_URL", "localhost:8080");
-        env::set_var("MICROSERVICE__DATABASE__PG.USER", "pg_user");
-        env::set_var("MICROSERVICE__DATABASE__PG.POOL.MAX_SIZE", "10");
+        env::set_var(
+            "MICROSERVICE__DATABASE__DATABASE_URL",
+            "postgres://postgres1:postgres1@localhost:5432/rust_template_db",
+        );
         let settings = Settings::with_path("./../../").load().unwrap();
         assert_eq!(settings.service.http_url, "localhost:8080");
-        assert_eq!(settings.database.pg.user.unwrap(), "pg_user");
-        assert_eq!(settings.database.pg.pool.unwrap().max_size, 10);
+        assert_eq!(
+            settings.database.database_url,
+            "postgres://postgres1:postgres1@localhost:5432/rust_template_db"
+        );
         env::remove_var("MICROSERVICE__SERVICE__HTTP_URL");
-        env::remove_var("MICROSERVICE__DATABASE__PG.USER");
-        env::remove_var("MICROSERVICE__DATABASE__PG.POOL.MAX_SIZE");
+        env::remove_var("MICROSERVICE__DATABASE__DATABASE_URL");
     }
 }
