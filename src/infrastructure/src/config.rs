@@ -1,4 +1,4 @@
-use application::settings::Settings;
+use application::Settings;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::{prelude::*, r2d2};
 use diesel_migrations::*;

@@ -1,8 +1,9 @@
-pub mod api;
-pub mod api_doc;
-pub mod config;
-pub mod errors;
-pub mod requests;
+mod api;
+mod api_doc;
+mod config;
+mod errors;
+mod requests;
 mod responses;
 
-pub use self::config::configure;
+pub use api_doc::ApiDoc;
+pub use config::configure;

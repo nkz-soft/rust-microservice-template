@@ -1,6 +1,10 @@
 use actix_web::web::Data;
 use actix_web::{delete, post, put};
 use actix_web::{get, http, web, Error, HttpRequest, HttpResponse, Result};
+use application::CreateToDoItemQuery;
+use application::DeleteToDoItemQuery;
+use application::GetToDoItemQuery;
+use application::UpdateToDoItemQuery;
 use std::rc::Rc;
 
 use uuid::Uuid;
@@ -8,9 +12,7 @@ use uuid::Uuid;
 use crate::errors::ApiError;
 use crate::requests::{CreateToDoItemRequest, UpdateToDoItemRequest};
 use crate::responses::ToDoItemResponse;
-use application::queries::*;
-use infrastructure::postgres_repositories::*;
-use infrastructure::DbPool;
+use infrastructure::{DbPool, PostgresToDoItemRepository};
 
 const TODO: &str = "todo";
 
@@ -28,7 +30,7 @@ pub async fn get_all(req: HttpRequest) -> Result<HttpResponse, Error> {
 
     let repository = PostgresToDoItemRepository::new(&pool.clone());
 
-    let get_handler = application::handlers::GetAllToDoItemQueryHandler::new(Rc::new(repository));
+    let get_handler = application::GetAllToDoItemQueryHandler::new(Rc::new(repository));
 
     let data = get_handler.execute().await.unwrap();
 
@@ -54,7 +56,7 @@ pub async fn get_by_id(req: HttpRequest, _id: web::Path<Uuid>) -> Result<HttpRes
 
     let repository = PostgresToDoItemRepository::new(&pool.clone());
 
-    let get_handler = application::handlers::GetToDoItemQueryHandler::new(Rc::new(repository));
+    let get_handler = application::GetToDoItemQueryHandler::new(Rc::new(repository));
 
     let data = get_handler
         .execute(GetToDoItemQuery::new(Some(_id.into_inner())))
@@ -84,7 +86,7 @@ pub async fn create(
 
     let repository = PostgresToDoItemRepository::new(&pool.clone());
 
-    let get_handler = application::handlers::CreateToDoItemQueryHandler::new(Rc::new(repository));
+    let get_handler = application::CreateToDoItemQueryHandler::new(Rc::new(repository));
 
     let data = get_handler
         .execute(CreateToDoItemQuery::new(&item.title, &item.title))
@@ -117,7 +119,7 @@ pub async fn update(
 
     let repository = PostgresToDoItemRepository::new(&pool.clone());
 
-    let get_handler = application::handlers::UpdateToDoItemQueryHandler::new(Rc::new(repository));
+    let get_handler = application::UpdateToDoItemQueryHandler::new(Rc::new(repository));
 
     get_handler
         .execute(UpdateToDoItemQuery::new(
@@ -147,7 +149,7 @@ pub async fn delete(req: HttpRequest, _id: web::Path<Uuid>) -> Result<HttpRespon
 
     let repository = PostgresToDoItemRepository::new(&pool.clone());
 
-    let get_handler = application::handlers::DeleteToDoItemQueryHandler::new(Rc::new(repository));
+    let get_handler = application::DeleteToDoItemQueryHandler::new(Rc::new(repository));
 
     get_handler
         .execute(DeleteToDoItemQuery::new(_id.into_inner()))

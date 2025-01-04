@@ -1,8 +1,21 @@
-pub mod dtos;
-pub mod handlers;
+mod dtos;
+mod handlers;
 mod mappers;
-pub mod queries;
-pub mod repositories;
-pub mod settings;
+mod queries;
+mod repositories;
+mod settings;
 
-pub use crate::dtos::*;
+pub use crate::settings::Settings;
+
+pub use crate::repositories::ToDoItemRepository;
+
+pub use crate::dtos::ToDoItemDto;
+
+pub use crate::queries::{
+    CreateToDoItemQuery, DeleteToDoItemQuery, GetToDoItemQuery, UpdateToDoItemQuery,
+};
+
+pub use crate::handlers::{
+    CreateToDoItemQueryHandler, DeleteToDoItemQueryHandler, GetAllToDoItemQueryHandler,
+    GetToDoItemQueryHandler, UpdateToDoItemQueryHandler,
+};
