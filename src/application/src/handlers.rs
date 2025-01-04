@@ -1,10 +1,8 @@
-use std::rc::Rc;
-use uuid::Uuid;
-
-use domain::entities::ToDoItem;
-
 use crate::queries::*;
 use crate::repositories::*;
+use domain::ToDoItem;
+use std::rc::Rc;
+use uuid::Uuid;
 
 pub struct GetToDoItemQueryHandler {
     repository: Rc<dyn ToDoItemRepository>,

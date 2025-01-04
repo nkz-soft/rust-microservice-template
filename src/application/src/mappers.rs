@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use domain::entities::ToDoItem;
+use domain::ToDoItem;
 use tokio_postgres::Row;
 
 pub struct ToDoItemMapper {}

@@ -2,7 +2,7 @@ use actix_web::dev::Server;
 use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpServer};
 use anyhow::Result;
-use application::settings::Settings;
+use application::Settings;
 use log::{debug, info};
 use utoipa::OpenApi;
 use utoipa_actix_web::AppExt;
@@ -27,7 +27,7 @@ async fn run_internal(settings: &Settings) -> Result<Server> {
     let server = HttpServer::new(move || {
         App::new()
             .into_utoipa_app()
-            .openapi(presentation::api_doc::ApiDoc::openapi())
+            .openapi(presentation::ApiDoc::openapi())
             .map(|app| app.wrap(Logger::default()))
             .map(|app| app.configure(presentation::configure))
             .openapi_service(|api| {

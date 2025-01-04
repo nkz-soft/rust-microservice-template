@@ -2,13 +2,13 @@ use crate::errors::Error::ItemNotFound;
 use crate::DbPool;
 use actix_web::web::Data;
 use anyhow::anyhow;
-use application::repositories::ToDoItemRepository;
+use application::ToDoItemRepository;
 use async_trait::async_trait;
 use diesel::ExpressionMethods;
 use diesel::{OptionalExtension, QueryDsl, RunQueryDsl};
-use domain::entities::ToDoItem;
-use domain::schema::to_do_items::dsl::to_do_items;
-use domain::schema::to_do_items::id;
+use domain::to_do_items::dsl::to_do_items;
+use domain::to_do_items::id;
+use domain::ToDoItem;
 use uuid::Uuid;
 
 pub struct PostgresToDoItemRepository {
