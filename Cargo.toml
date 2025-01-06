@@ -27,7 +27,7 @@ tokio-postgres = { version = "0.7.12", features = ["with-uuid-1"] }
 postgres-types = { version = "0.2.8", features = ["uuid-1"] }
 refinery = { version = "0.8.14", features = ["tokio-postgres"] }
 tokio = { version = "1.42.0", features = ["full"] }
-async-trait = "0.1.83"
+async-trait = "0.1.84"
 serial_test = "3.2.0"
 
 # Database
