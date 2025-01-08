@@ -14,7 +14,7 @@ resolver = "2"
 actix-web = "4.9.0"
 
 # OpenAPI
-utoipa = { version = "5.2.0", features = ["actix_extras", "uuid"] }
+utoipa = { version = "5.3.1", features = ["actix_extras", "uuid"] }
 utoipa-actix-web = "0.1.2"
 utoipa-swagger-ui = { version = "8.1.0", features = ["actix-web"] }
 
