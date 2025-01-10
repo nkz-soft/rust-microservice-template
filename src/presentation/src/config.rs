@@ -1,6 +1,6 @@
+use crate::api;
 use actix_web::web;
 
-use crate::api;
 extern crate application;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
@@ -11,5 +11,11 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .service(api::get_by_id)
             .service(api::update)
             .service(api::delete),
+    );
+    cfg.service(
+        web::scope("/healthz")
+            .service(api::startup)
+            .service(api::ready)
+            .service(api::live),
     );
 }

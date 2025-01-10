@@ -4,4 +4,3 @@ service_name = 'rust_template_service'
 
 [database]
 database_url = 'postgres://postgres:postgres@localhost:5432/rust_template_db'
-

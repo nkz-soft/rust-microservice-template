@@ -18,25 +18,21 @@ utoipa = { version = "5.3.1", features = ["actix_extras", "uuid"] }
 utoipa-actix-web = "0.1.2"
 utoipa-swagger-ui = { version = "8.1.1", features = ["actix-web"] }
 
+# Serialization
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.134"
 
-uuid = { version = "1.11.0", features = ["v4", "serde"] }
-readonly = "0.2.12"
-tokio-postgres = { version = "0.7.12", features = ["with-uuid-1"] }
-postgres-types = { version = "0.2.8", features = ["uuid-1"] }
-refinery = { version = "0.8.14", features = ["tokio-postgres"] }
+# Async
 tokio = { version = "1.42.0", features = ["full"] }
 async-trait = "0.1.84"
-serial_test = "3.2.0"
 
-# Database
+# Database and ORM
+tokio-postgres = { version = "0.7.12", features = ["with-uuid-1"] }
 diesel = { version = "2.0.0", features = ["postgres", "r2d2", "uuid"] }
 diesel_migrations = "2.0.0"
 
 # Logging
 log = "0.4.22"
-pretty_env_logger = "0.5.0"
 env_logger = "0.11.6"
 
 # Configuration
@@ -51,8 +47,9 @@ thiserror = "2.0.9"
 testcontainers = "0.23.1"
 testcontainers-modules = { version = "0.11.4", features = ["postgres"] }
 reqwest = { version = "0.12.11", features = ["json"]}
+serial_test = "3.2.0"
 
 # Misc
-once_cell = "1.20.2"
 ctor = "0.2.9"
-async-std = { version = "1", features = ["attributes", "tokio1"] }
+uuid = { version = "1.11.0", features = ["v4", "serde"] }
+readonly = "0.2.12"
