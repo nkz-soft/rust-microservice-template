@@ -41,7 +41,7 @@ config = "0.15.4"
 
 # Error Handling
 anyhow = "1.0.95"
-thiserror = "2.0.9"
+thiserror = "2.0.11"
 
 # Testing
 testcontainers = "0.23.1"
