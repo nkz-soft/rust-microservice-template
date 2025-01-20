@@ -37,7 +37,7 @@ env_logger = "0.11.6"
 
 # Configuration
 dotenv = "0.15.0"
-config = "0.15.5"
+config = "0.15.6"
 
 # Error Handling
 anyhow = "1.0.95"
