@@ -51,5 +51,5 @@ serial_test = "3.2.0"
 
 # Misc
 ctor = "0.2.9"
-uuid = { version = "1.13.1", features = ["v4", "serde"] }
+uuid = { version = "1.14.0", features = ["v4", "serde"] }
 readonly = "0.2.12"
