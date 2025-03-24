@@ -52,4 +52,4 @@ serial_test = "3.2.0"
 # Misc
 ctor = "0.2.9"
 uuid = { version = "1.16.0", features = ["v4", "serde"] }
-readonly = "0.2.12"
+readonly = "0.2.13"
