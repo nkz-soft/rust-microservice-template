@@ -11,7 +11,7 @@ resolver = "2"
 [workspace.dependencies]
 
 # Web
-actix-web = "4.9.0"
+actix-web = "4.10.2"
 
 # OpenAPI
 utoipa = { version = "5.3.1", features = ["actix_extras", "uuid"] }
