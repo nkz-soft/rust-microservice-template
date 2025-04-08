@@ -1,15 +1,14 @@
 use actix_web::web::Data;
 use actix_web::{delete, post, put};
-use actix_web::{get, http, web, Error, HttpRequest, HttpResponse, Result};
+use actix_web::{get, http, web, HttpRequest, HttpResponse, Result};
 use application::CreateToDoItemQuery;
 use application::DeleteToDoItemQuery;
 use application::GetToDoItemQuery;
 use application::UpdateToDoItemQuery;
 use std::rc::Rc;
-
 use uuid::Uuid;
 
-use crate::errors::ApiError;
+use crate::errors::HttpError;
 use crate::requests::{CreateToDoItemRequest, UpdateToDoItemRequest};
 use crate::responses::ToDoItemResponse;
 use infrastructure::{DbPool, PostgresToDoItemRepository};
@@ -25,14 +24,14 @@ const TODO: &str = "todo";
     )
 )]
 #[get("")]
-pub async fn get_all(req: HttpRequest) -> Result<HttpResponse, Error> {
+pub async fn get_all(req: HttpRequest) -> Result<HttpResponse, HttpError> {
     let pool = req.app_data::<Data<DbPool>>().unwrap();
 
     let repository = PostgresToDoItemRepository::new(&pool.clone());
 
     let get_handler = application::GetAllToDoItemQueryHandler::new(Rc::new(repository));
 
-    let data = get_handler.execute().await.unwrap();
+    let data = get_handler.execute().await?;
 
     Ok(HttpResponse::Ok()
         .content_type(http::header::ContentType::json())
@@ -51,7 +50,7 @@ pub async fn get_all(req: HttpRequest) -> Result<HttpResponse, Error> {
     ),
 )]
 #[get("/{id}")]
-pub async fn get_by_id(req: HttpRequest, _id: web::Path<Uuid>) -> Result<HttpResponse, Error> {
+pub async fn get_by_id(req: HttpRequest, _id: web::Path<Uuid>) -> Result<HttpResponse, HttpError> {
     let pool = req.app_data::<Data<DbPool>>().unwrap();
 
     let repository = PostgresToDoItemRepository::new(&pool.clone());
@@ -60,8 +59,7 @@ pub async fn get_by_id(req: HttpRequest, _id: web::Path<Uuid>) -> Result<HttpRes
 
     let data = get_handler
         .execute(GetToDoItemQuery::new(Some(_id.into_inner())))
-        .await
-        .unwrap();
+        .await?;
 
     Ok(HttpResponse::Ok()
         .content_type(http::header::ContentType::json())
@@ -81,7 +79,7 @@ pub async fn get_by_id(req: HttpRequest, _id: web::Path<Uuid>) -> Result<HttpRes
 pub async fn create(
     req: HttpRequest,
     item: web::Json<CreateToDoItemRequest>,
-) -> Result<HttpResponse, ApiError> {
+) -> Result<HttpResponse, HttpError> {
     let pool = req.app_data::<Data<DbPool>>().unwrap();
 
     let repository = PostgresToDoItemRepository::new(&pool.clone());
@@ -94,7 +92,7 @@ pub async fn create(
 
     Ok(HttpResponse::Ok()
         .content_type(http::header::ContentType::json())
-        .body(serde_json::to_string(&data).unwrap()))
+        .body(serde_json::to_string(&data)?))
 }
 
 /// Updates a to-do item by Id.
@@ -114,7 +112,7 @@ pub async fn update(
     req: HttpRequest,
     id: web::Path<Uuid>,
     item: web::Json<UpdateToDoItemRequest>,
-) -> Result<HttpResponse, ApiError> {
+) -> Result<HttpResponse, HttpError> {
     let pool = req.app_data::<Data<DbPool>>().unwrap();
 
     let repository = PostgresToDoItemRepository::new(&pool.clone());
@@ -144,7 +142,7 @@ pub async fn update(
     )
 )]
 #[delete("/{id}")]
-pub async fn delete(req: HttpRequest, _id: web::Path<Uuid>) -> Result<HttpResponse, ApiError> {
+pub async fn delete(req: HttpRequest, _id: web::Path<Uuid>) -> Result<HttpResponse, HttpError> {
     let pool = req.app_data::<Data<DbPool>>().unwrap();
 
     let repository = PostgresToDoItemRepository::new(&pool.clone());

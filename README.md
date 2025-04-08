@@ -107,15 +107,17 @@ CQRS (Command Query Responsibility Segregation) is a pattern that separates the 
 - [x] OpenAPI documentation
 - [x] Advanced error handling
 - [x] Health checks
+- [x] Problem details
 - [ ] Coming soon :)
 
 ## Technologies used
 
 - [Rust](https://github.com/rust-lang/rust): The Rust Programming Language.
 - [Actix](https://github.com/actix/actix-web): Actix Web is a powerful, pragmatic, and extremely fast web framework for Rust.
-- [Refinery](https://github.com/rust-db/refinery): Refinery strives to make running migrations for different databases as easy as possible.
 - [rust-postgres](https://github.com/sfackler/rust-postgres): PostgreSQL support for Rust.
 - [testcontainers-rs](https://github.com/testcontainers/testcontainers-rs): Testcontainers-rs is the official Rust language fork of http://testcontainers.org.
 - [utoipa](https://github.com/juhaku/utoipa): Code first and compile time generated OpenAPI documentation for Rust APIs.
 - [diesel](https://github.com/diesel-rs/diesel): Diesel is a Rust ORM and query builder.
 - [diesel_migrations](https://github.com/diesel-rs/diesel_migrations): Diesel migrations for Rust.
+- [problem_details](https://github.com/frenetisch-applaudierend/problem-details-rs): Problem details for Rust.
+

@@ -436,7 +436,7 @@ dependencies = [
  "futures-util",
  "hex",
  "home",
- "http 1.1.0",
+ "http 1.3.1",
  "http-body-util",
  "hyper",
  "hyper-named-pipe",
@@ -680,13 +680,19 @@ dependencies = [
 
 [[package]]
 name = "ctor"
-version = "0.2.9"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "32a2785755761f3ddc1492979ce1e48d2c00d09311c39e4466429188f3dd6501"
+checksum = "a7747ac3a66a06f4ee6718686c8ea976d2d05fb30ada93ebd76b3f9aef97257c"
 dependencies = [
- "quote",
- "syn",
+ "ctor-proc-macro",
+ "dtor",
 ]
+
+[[package]]
+name = "ctor-proc-macro"
+version = "0.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4f211af61d8efdd104f96e57adf5e426ba1bc3ed7a4ead616e15e5881fd79c4d"
 
 [[package]]
 name = "darling"
@@ -875,6 +881,21 @@ dependencies = [
  "quote",
  "syn",
 ]
+
+[[package]]
+name = "dtor"
+version = "0.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8bf39a0bfd1f94d62ffdb2802a7e6244c0f34f6ebacf5d4c26547d08cd1d67a5"
+dependencies = [
+ "dtor-proc-macro",
+]
+
+[[package]]
+name = "dtor-proc-macro"
+version = "0.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7454e41ff9012c00d53cf7f475c5e3afa3b91b7c90568495495e8d9bf47a1055"
 
 [[package]]
 name = "either"
@@ -1151,7 +1172,7 @@ dependencies = [
  "fnv",
  "futures-core",
  "futures-sink",
- "http 1.1.0",
+ "http 1.3.1",
  "indexmap 2.6.0",
  "slab",
  "tokio",
@@ -1239,9 +1260,9 @@ dependencies = [
 
 [[package]]
 name = "http"
-version = "1.1.0"
+version = "1.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21b9ddb458710bc376481b842f5da65cdf31522de232c1ca8146abce2a358258"
+checksum = "f4a85d31aea989eead29a3aaf9e1115a180df8282431156e533de47660892565"
 dependencies = [
  "bytes",
  "fnv",
@@ -1255,7 +1276,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1efedce1fb8e6913f23e0c92de8e62cd5b772a67e7b3946df930a62566c93184"
 dependencies = [
  "bytes",
- "http 1.1.0",
+ "http 1.3.1",
 ]
 
 [[package]]
@@ -1266,9 +1287,19 @@ checksum = "793429d76616a256bcb62c2a2ec2bed781c8307e797e2598c50010f2bee2544f"
 dependencies = [
  "bytes",
  "futures-util",
- "http 1.1.0",
+ "http 1.3.1",
  "http-body",
  "pin-project-lite",
+]
+
+[[package]]
+name = "http-serde"
+version = "2.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0f056c8559e3757392c8d091e796416e4649d8e49e88b8d76df6c002f05027fd"
+dependencies = [
+ "http 1.3.1",
+ "serde",
 ]
 
 [[package]]
@@ -1299,7 +1330,7 @@ dependencies = [
  "futures-channel",
  "futures-util",
  "h2 0.4.6",
- "http 1.1.0",
+ "http 1.3.1",
  "http-body",
  "httparse",
  "httpdate",
@@ -1332,7 +1363,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08afdbb5c31130e3034af566421053ab03787c640246a446327f550d11bcb333"
 dependencies = [
  "futures-util",
- "http 1.1.0",
+ "http 1.3.1",
  "hyper",
  "hyper-util",
  "rustls",
@@ -1367,7 +1398,7 @@ dependencies = [
  "bytes",
  "futures-channel",
  "futures-util",
- "http 1.1.0",
+ "http 1.3.1",
  "http-body",
  "hyper",
  "pin-project-lite",
@@ -2117,13 +2148,27 @@ dependencies = [
  "actix-web",
  "anyhow",
  "application",
+ "http 1.3.1",
  "infrastructure",
+ "problem_details",
  "readonly",
  "serde",
  "serde_json",
- "thiserror 2.0.9",
  "utoipa",
  "uuid",
+]
+
+[[package]]
+name = "problem_details"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "777f7cf33eca7f41687a047c133ec7df9a03b13757a2666062d8b9cfa446e397"
+dependencies = [
+ "actix-web",
+ "http 1.3.1",
+ "http-serde",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -2270,7 +2315,7 @@ dependencies = [
  "futures-core",
  "futures-util",
  "h2 0.4.6",
- "http 1.1.0",
+ "http 1.3.1",
  "http-body",
  "http-body-util",
  "hyper",
@@ -2745,7 +2790,7 @@ checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
 
 [[package]]
 name = "starter"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "actix-web",
  "anyhow",
