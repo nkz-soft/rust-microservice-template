@@ -5,4 +5,7 @@ use uuid::Uuid;
 pub enum Error {
     #[error("item with id {id} not found")]
     ItemNotFound { id: Uuid },
+
+    #[error("internal error: {0}")]
+    InternalError(String),
 }

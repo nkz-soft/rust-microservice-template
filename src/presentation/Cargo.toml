@@ -12,9 +12,11 @@ serde_json.workspace = true
 readonly.workspace = true
 uuid.workspace = true
 utoipa.workspace = true
-thiserror.workspace = true
 anyhow.workspace = true
+problem_details.workspace = true
+http.workspace = true
 
 application = { path = "../application" }
 infrastructure = { path = "../infrastructure" }
+
 

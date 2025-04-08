@@ -12,6 +12,8 @@ resolver = "2"
 
 # Web
 actix-web = "4.10.2"
+problem_details = { version = "0.8.0", features = ["actix", "json"] }
+http = "1.3.1"
 
 # OpenAPI
 utoipa = { version = "5.3.1", features = ["actix_extras", "uuid"] }
@@ -34,6 +36,7 @@ diesel_migrations = "2.0.0"
 # Logging
 log = "0.4.27"
 env_logger = "0.11.6"
+tracing = "0.1.40"
 
 # Configuration
 dotenv = "0.15.0"
