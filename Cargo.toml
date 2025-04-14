@@ -36,7 +36,7 @@ diesel_migrations = "2.0.0"
 # Logging
 log = "0.4.27"
 env_logger = "0.11.6"
-tracing = "0.1.40"
+tracing = "0.1.41"
 
 # Configuration
 dotenv = "0.15.0"
