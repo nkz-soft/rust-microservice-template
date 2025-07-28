@@ -312,6 +312,7 @@ dependencies = [
  "readonly",
  "serde",
  "serial_test",
+ "tokio",
  "tokio-postgres",
  "uuid",
 ]
@@ -2813,7 +2814,9 @@ dependencies = [
  "actix-web",
  "anyhow",
  "application",
+ "async-trait",
  "ctor",
+ "domain",
  "dotenv",
  "env_logger",
  "infrastructure",

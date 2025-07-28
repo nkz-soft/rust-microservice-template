@@ -27,3 +27,5 @@ testcontainers-modules.workspace = true
 ctor.workspace = true
 serial_test.workspace = true
 uuid.workspace = true
+async-trait.workspace = true
+domain = { path = "../domain" }

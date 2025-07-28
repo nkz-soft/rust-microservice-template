@@ -18,3 +18,5 @@ domain = { path = "../domain" }
 
 [dev-dependencies]
 serial_test.workspace = true
+tokio.workspace = true
+async-trait.workspace = true

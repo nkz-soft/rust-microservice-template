@@ -1,17 +1,16 @@
 use actix_web::web::Data;
 use actix_web::{delete, post, put};
-use actix_web::{get, http, web, HttpRequest, HttpResponse, Result};
+use actix_web::{get, http, web, HttpResponse, Result};
 use application::CreateToDoItemQuery;
 use application::DeleteToDoItemQuery;
 use application::GetToDoItemQuery;
 use application::UpdateToDoItemQuery;
-use std::rc::Rc;
+use application::ToDoItemService;
 use uuid::Uuid;
 
 use crate::errors::HttpError;
 use crate::requests::{CreateToDoItemRequest, UpdateToDoItemRequest};
 use crate::responses::ToDoItemResponse;
-use infrastructure::{DbPool, PostgresToDoItemRepository};
 
 const TODO: &str = "todo";
 
@@ -24,14 +23,9 @@ const TODO: &str = "todo";
     )
 )]
 #[get("")]
-pub async fn get_all(req: HttpRequest) -> Result<HttpResponse, HttpError> {
-    let pool = req.app_data::<Data<DbPool>>().unwrap();
-
-    let repository = PostgresToDoItemRepository::new(&pool.clone());
-
-    let get_handler = application::GetAllToDoItemQueryHandler::new(Rc::new(repository));
-
-    let data = get_handler.execute().await?;
+pub async fn get_all(service: Data<ToDoItemService>) -> Result<HttpResponse, HttpError> {
+    let handler = service.get_all_handler();
+    let data = handler.execute().await?;
 
     Ok(HttpResponse::Ok()
         .content_type(http::header::ContentType::json())
@@ -50,15 +44,13 @@ pub async fn get_all(req: HttpRequest) -> Result<HttpResponse, HttpError> {
     ),
 )]
 #[get("/{id}")]
-pub async fn get_by_id(req: HttpRequest, _id: web::Path<Uuid>) -> Result<HttpResponse, HttpError> {
-    let pool = req.app_data::<Data<DbPool>>().unwrap();
-
-    let repository = PostgresToDoItemRepository::new(&pool.clone());
-
-    let get_handler = application::GetToDoItemQueryHandler::new(Rc::new(repository));
-
-    let data = get_handler
-        .execute(GetToDoItemQuery::new(Some(_id.into_inner())))
+pub async fn get_by_id(
+    service: Data<ToDoItemService>,
+    id: web::Path<Uuid>,
+) -> Result<HttpResponse, HttpError> {
+    let handler = service.get_handler();
+    let data = handler
+        .execute(GetToDoItemQuery::new(Some(id.into_inner())))
         .await?;
 
     Ok(HttpResponse::Ok()
@@ -77,17 +69,14 @@ pub async fn get_by_id(req: HttpRequest, _id: web::Path<Uuid>) -> Result<HttpRes
 )]
 #[post("")]
 pub async fn create(
-    req: HttpRequest,
+    service: Data<ToDoItemService>,
     item: web::Json<CreateToDoItemRequest>,
 ) -> Result<HttpResponse, HttpError> {
-    let pool = req.app_data::<Data<DbPool>>().unwrap();
-
-    let repository = PostgresToDoItemRepository::new(&pool.clone());
-
-    let get_handler = application::CreateToDoItemQueryHandler::new(Rc::new(repository));
-
-    let data = get_handler
-        .execute(CreateToDoItemQuery::new(&item.title, &item.title))
+    let handler = service.create_handler();
+    
+    // Fixed bug: was using &item.title for both title and note
+    let data = handler
+        .execute(CreateToDoItemQuery::new(&item.title, &item.note))
         .await?;
 
     Ok(HttpResponse::Ok()
@@ -109,17 +98,13 @@ pub async fn create(
 )]
 #[put("/{id}")]
 pub async fn update(
-    req: HttpRequest,
+    service: Data<ToDoItemService>,
     id: web::Path<Uuid>,
     item: web::Json<UpdateToDoItemRequest>,
 ) -> Result<HttpResponse, HttpError> {
-    let pool = req.app_data::<Data<DbPool>>().unwrap();
-
-    let repository = PostgresToDoItemRepository::new(&pool.clone());
-
-    let get_handler = application::UpdateToDoItemQueryHandler::new(Rc::new(repository));
-
-    get_handler
+    let handler = service.update_handler();
+    
+    handler
         .execute(UpdateToDoItemQuery::new(
             id.into_inner(),
             &item.title,
@@ -142,15 +127,14 @@ pub async fn update(
     )
 )]
 #[delete("/{id}")]
-pub async fn delete(req: HttpRequest, _id: web::Path<Uuid>) -> Result<HttpResponse, HttpError> {
-    let pool = req.app_data::<Data<DbPool>>().unwrap();
-
-    let repository = PostgresToDoItemRepository::new(&pool.clone());
-
-    let get_handler = application::DeleteToDoItemQueryHandler::new(Rc::new(repository));
-
-    get_handler
-        .execute(DeleteToDoItemQuery::new(_id.into_inner()))
+pub async fn delete(
+    service: Data<ToDoItemService>,
+    id: web::Path<Uuid>,
+) -> Result<HttpResponse, HttpError> {
+    let handler = service.delete_handler();
+    
+    handler
+        .execute(DeleteToDoItemQuery::new(id.into_inner()))
         .await?;
 
     Ok(HttpResponse::from(HttpResponse::Ok()))

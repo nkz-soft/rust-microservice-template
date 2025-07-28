@@ -1,26 +1,69 @@
-mod utils;
-
 #[cfg(test)]
 mod tests {
-    use crate::prepare_test_environment;
-    use crate::utils::server_utils;
     use serial_test::serial;
     use std::collections::HashMap;
     use uuid::Uuid;
 
-    pub(crate) const CONFIG_FILE_PATH: &str = "./../../";
+    // Local test utilities
+    use std::time::Duration;
+    use testcontainers::core::IntoContainerPort;
+    use testcontainers::{ContainerAsync, ImageExt};
+    use testcontainers_modules::postgres::Postgres;
+    use testcontainers_modules::testcontainers::runners::AsyncRunner;
+    use tokio::sync::OnceCell;
+    use tokio::task::JoinHandle;
+
+    const CONFIG_FILE_PATH: &str = "./../../";
     const WEB_SERVER_PATH: &str = "http://localhost:8181/";
+
+    struct Server {
+        #[allow(dead_code)]
+        server_handle: JoinHandle<()>,
+        container: ContainerAsync<Postgres>,
+    }
+
+    impl Server {
+        async fn start() -> Self {
+            let container = Postgres::default()
+                .with_db_name("rust_template_db")
+                .with_mapped_port(5432, 5432.tcp())
+                .with_tag("16-alpine")
+                .start()
+                .await
+                .unwrap();
+
+            let server_handle = tokio::spawn(async move {
+                let server = starter::run_with_config(CONFIG_FILE_PATH)
+                    .await
+                    .expect("Failed to bind address");
+                let _server_task = tokio::spawn(server);
+            });
+            tokio::time::sleep(Duration::from_secs(1)).await;
+            Server {
+                server_handle,
+                container,
+            }
+        }
+    }
+
+    static TEST_SERVER_ONCE: OnceCell<Server> = OnceCell::const_new();
+
+    async fn init_test_env() -> reqwest::Client {
+        TEST_SERVER_ONCE.get_or_init(Server::start).await;
+        reqwest::Client::new()
+    }
+    
     #[serial]
     #[tokio::test]
     async fn start_server_and_test() {
-        let client = prepare_test_environment!();
+        let client = init_test_env().await;
         assert!(client.get(WEB_SERVER_PATH).send().await.is_ok());
     }
 
     #[serial]
     #[tokio::test]
     async fn test_get_all() {
-        let client = prepare_test_environment!();
+        let client = init_test_env().await;
 
         // Act
         let response = client
@@ -36,7 +79,7 @@ mod tests {
     #[serial]
     #[tokio::test]
     async fn test_get_by_id() {
-        let client = prepare_test_environment!();
+        let client = init_test_env().await;
         let mut map_create = HashMap::new();
         map_create.insert("title", "title1");
         map_create.insert("note", "note1");
@@ -65,7 +108,7 @@ mod tests {
     #[serial]
     #[tokio::test]
     async fn test_create() {
-        let client = prepare_test_environment!();
+        let client = init_test_env().await;
         let mut map = HashMap::new();
         map.insert("title", "title1");
         map.insert("note", "note1");
@@ -85,7 +128,7 @@ mod tests {
     #[serial]
     #[tokio::test]
     async fn test_update() {
-        let client = prepare_test_environment!();
+        let client = init_test_env().await;
         let mut map_create = HashMap::new();
         map_create.insert("title", "title1");
         map_create.insert("note", "note1");
@@ -119,7 +162,7 @@ mod tests {
     #[serial]
     #[tokio::test]
     async fn test_delete() {
-        let client = prepare_test_environment!();
+        let client = init_test_env().await;
         let mut map_create = HashMap::new();
         map_create.insert("title", "title1");
         map_create.insert("note", "note1");
