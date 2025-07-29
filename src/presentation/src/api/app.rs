@@ -4,8 +4,8 @@ use actix_web::{get, http, web, HttpResponse, Result};
 use application::CreateToDoItemQuery;
 use application::DeleteToDoItemQuery;
 use application::GetToDoItemQuery;
-use application::UpdateToDoItemQuery;
 use application::ToDoItemService;
+use application::UpdateToDoItemQuery;
 use uuid::Uuid;
 
 use crate::errors::HttpError;
@@ -73,7 +73,7 @@ pub async fn create(
     item: web::Json<CreateToDoItemRequest>,
 ) -> Result<HttpResponse, HttpError> {
     let handler = service.create_handler();
-    
+
     // Fixed bug: was using &item.title for both title and note
     let data = handler
         .execute(CreateToDoItemQuery::new(&item.title, &item.note))
@@ -103,7 +103,7 @@ pub async fn update(
     item: web::Json<UpdateToDoItemRequest>,
 ) -> Result<HttpResponse, HttpError> {
     let handler = service.update_handler();
-    
+
     handler
         .execute(UpdateToDoItemQuery::new(
             id.into_inner(),
@@ -132,7 +132,7 @@ pub async fn delete(
     id: web::Path<Uuid>,
 ) -> Result<HttpResponse, HttpError> {
     let handler = service.delete_handler();
-    
+
     handler
         .execute(DeleteToDoItemQuery::new(id.into_inner()))
         .await?;

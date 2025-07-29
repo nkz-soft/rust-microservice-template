@@ -25,10 +25,12 @@ async fn run_internal(settings: &Settings) -> Result<Server> {
     debug!("with configuration: {:?}", &settings);
 
     let pool = infrastructure::configure(settings).await?;
-    
+
     // Create repository with Arc for thread safety
-    let repository = Arc::new(PostgresToDoItemRepository::new(&web::Data::new(pool.clone())));
-    
+    let repository = Arc::new(PostgresToDoItemRepository::new(&web::Data::new(
+        pool.clone(),
+    )));
+
     // Create service with dependency injection
     let todo_service = ToDoItemService::new(repository);
 

@@ -23,7 +23,9 @@ pub struct GetAllToDoItemQueryHandler {
 }
 
 impl GetAllToDoItemQueryHandler {
-    pub fn new(repository: Arc<dyn ToDoItemRepository + Send + Sync>) -> GetAllToDoItemQueryHandler {
+    pub fn new(
+        repository: Arc<dyn ToDoItemRepository + Send + Sync>,
+    ) -> GetAllToDoItemQueryHandler {
         GetAllToDoItemQueryHandler { repository }
     }
 
@@ -37,7 +39,9 @@ pub struct CreateToDoItemQueryHandler {
 }
 
 impl CreateToDoItemQueryHandler {
-    pub fn new(repository: Arc<dyn ToDoItemRepository + Send + Sync>) -> CreateToDoItemQueryHandler {
+    pub fn new(
+        repository: Arc<dyn ToDoItemRepository + Send + Sync>,
+    ) -> CreateToDoItemQueryHandler {
         CreateToDoItemQueryHandler { repository }
     }
 
@@ -53,7 +57,9 @@ pub struct UpdateToDoItemQueryHandler {
 }
 
 impl UpdateToDoItemQueryHandler {
-    pub fn new(repository: Arc<dyn ToDoItemRepository + Send + Sync>) -> UpdateToDoItemQueryHandler {
+    pub fn new(
+        repository: Arc<dyn ToDoItemRepository + Send + Sync>,
+    ) -> UpdateToDoItemQueryHandler {
         UpdateToDoItemQueryHandler { repository }
     }
 
@@ -69,7 +75,9 @@ pub struct DeleteToDoItemQueryHandler {
 }
 
 impl DeleteToDoItemQueryHandler {
-    pub fn new(repository: Arc<dyn ToDoItemRepository + Send + Sync>) -> DeleteToDoItemQueryHandler {
+    pub fn new(
+        repository: Arc<dyn ToDoItemRepository + Send + Sync>,
+    ) -> DeleteToDoItemQueryHandler {
         DeleteToDoItemQueryHandler { repository }
     }
 

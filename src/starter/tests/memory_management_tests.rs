@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use application::{ToDoItemService, ToDoItemRepository};
+    use application::{ToDoItemRepository, ToDoItemService};
     use domain::ToDoItem;
     use std::sync::{Arc, Mutex};
     use std::time::Duration;
@@ -54,7 +54,7 @@ mod tests {
             *self.operation_count.lock().unwrap() += 1;
             sleep(Duration::from_millis(10)).await; // Simulate some work
             let id = entity.id;
-            
+
             let mut items = self.items.lock().unwrap();
             // Update existing or add new
             if let Some(pos) = items.iter().position(|item| item.id == id) {
@@ -89,11 +89,8 @@ mod tests {
         assert_eq!(Arc::as_ptr(&handler2), Arc::as_ptr(&handler3));
 
         // Test that they can be used concurrently
-        let (result1, result2, result3) = tokio::join!(
-            handler1.execute(),
-            handler2.execute(),
-            handler3.execute()
-        );
+        let (result1, result2, result3) =
+            tokio::join!(handler1.execute(), handler2.execute(), handler3.execute());
 
         assert!(result1.is_ok());
         assert!(result2.is_ok());
@@ -113,7 +110,7 @@ mod tests {
 
         // All cloned services should share the same handler instances
         let original_handler_ptr = Arc::as_ptr(&original_service.get_all_handler());
-        
+
         for cloned_service in &cloned_services {
             let cloned_handler_ptr = Arc::as_ptr(&cloned_service.get_all_handler());
             assert_eq!(original_handler_ptr, cloned_handler_ptr);
@@ -146,12 +143,15 @@ mod tests {
         let service = Arc::new(ToDoItemService::new(repository.clone()));
 
         // Add test data
-        let test_item = ToDoItem::new("Concurrent Test".to_string(), "Testing concurrency".to_string());
+        let test_item = ToDoItem::new(
+            "Concurrent Test".to_string(),
+            "Testing concurrency".to_string(),
+        );
         repository.items.lock().unwrap().push(test_item);
 
         // Create many concurrent tasks accessing different handlers
         let mut tasks = vec![];
-        
+
         for i in 0..50 {
             let service_clone = service.clone();
             let task = tokio::spawn(async move {
@@ -164,7 +164,7 @@ mod tests {
                         let handler = service_clone.create_handler();
                         let query = application::CreateToDoItemQuery::new(
                             &format!("Task {}", i),
-                            &format!("Note {}", i)
+                            &format!("Note {}", i),
                         );
                         handler.execute(query).await.map(|_| 1)
                     }
@@ -196,15 +196,15 @@ mod tests {
     #[tokio::test]
     async fn test_memory_leak_prevention() {
         let repository = Arc::new(TestToDoItemRepository::new());
-        
+
         // Create many services and let them go out of scope
         for _ in 0..1000 {
             let service = ToDoItemService::new(repository.clone());
             let handler = service.get_all_handler();
-            
+
             // Use the handler briefly
             let _ = handler.execute().await;
-            
+
             // Service and handler should be dropped here
         }
 
@@ -216,11 +216,11 @@ mod tests {
     #[tokio::test]
     async fn test_boxed_vs_arc_performance() {
         let repository = Arc::new(TestToDoItemRepository::new());
-        
+
         // Test Arc-based service
         repository.reset_count();
         let arc_service = ToDoItemService::new(repository.clone());
-        
+
         let arc_start = std::time::Instant::now();
         for _ in 0..100 {
             let handler = arc_service.get_all_handler();
@@ -228,11 +228,11 @@ mod tests {
         }
         let arc_duration = arc_start.elapsed();
         let arc_operations = repository.get_operation_count();
-        
+
         // Test Box-based service
         repository.reset_count();
         let box_service = application::ToDoItemServiceBoxed::new(repository.clone());
-        
+
         let box_start = std::time::Instant::now();
         for _ in 0..100 {
             let handler = box_service.create_get_all_handler();
@@ -240,14 +240,17 @@ mod tests {
         }
         let box_duration = box_start.elapsed();
         let box_operations = repository.get_operation_count();
-        
+
         // Both should complete all operations
         assert_eq!(arc_operations, 100);
         assert_eq!(box_operations, 100);
-        
+
         // Arc-based should generally be faster due to shared instances
         // (though this test might be too small to see significant difference)
-        println!("Arc duration: {:?}, Box duration: {:?}", arc_duration, box_duration);
+        println!(
+            "Arc duration: {:?}, Box duration: {:?}",
+            arc_duration, box_duration
+        );
     }
 
     #[tokio::test]
@@ -257,7 +260,7 @@ mod tests {
 
         // Test that service can be sent across thread boundaries
         let service_arc = Arc::new(service);
-        
+
         let handle = tokio::spawn(async move {
             let handler = service_arc.get_all_handler();
             handler.execute().await
@@ -274,10 +277,10 @@ mod tests {
     fn test_compile_time_send_sync() {
         let repository = Arc::new(TestToDoItemRepository::new());
         let service = ToDoItemService::new(repository.clone());
-        
+
         // These should compile without errors, proving Send + Sync compliance
         _verify_send_sync(service.clone());
         _verify_send_sync(service.get_handler());
         _verify_send_sync(repository);
     }
-} 
+}

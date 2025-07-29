@@ -164,17 +164,17 @@ mod tests {
     async fn test_service_cloning() {
         let repository = Arc::new(MockToDoItemRepository::new());
         let service = ToDoItemService::new(repository);
-        
+
         // Test that service can be cloned (important for actix-web Data<>)
         let cloned_service = service.clone();
-        
+
         // Both services should work independently
         let handler1 = service.get_all_handler();
         let handler2 = cloned_service.get_all_handler();
-        
+
         let result1 = handler1.execute().await;
         let result2 = handler2.execute().await;
-        
+
         assert!(result1.is_ok());
         assert!(result2.is_ok());
     }
@@ -190,7 +190,7 @@ mod tests {
 
         // Test concurrent access with multiple tasks
         let mut handles = vec![];
-        
+
         for i in 0..10 {
             let service_clone = service.clone();
             let handle = task::spawn(async move {
@@ -225,30 +225,45 @@ mod tests {
         let delete_handler = service.create_delete_handler();
 
         // Verify handlers are boxed correctly
-        assert_eq!(std::mem::size_of_val(&*get_handler), std::mem::size_of::<GetToDoItemQueryHandler>());
-        assert_eq!(std::mem::size_of_val(&*get_all_handler), std::mem::size_of::<GetAllToDoItemQueryHandler>());
-        assert_eq!(std::mem::size_of_val(&*create_handler), std::mem::size_of::<CreateToDoItemQueryHandler>());
-        assert_eq!(std::mem::size_of_val(&*update_handler), std::mem::size_of::<UpdateToDoItemQueryHandler>());
-        assert_eq!(std::mem::size_of_val(&*delete_handler), std::mem::size_of::<DeleteToDoItemQueryHandler>());
+        assert_eq!(
+            std::mem::size_of_val(&*get_handler),
+            std::mem::size_of::<GetToDoItemQueryHandler>()
+        );
+        assert_eq!(
+            std::mem::size_of_val(&*get_all_handler),
+            std::mem::size_of::<GetAllToDoItemQueryHandler>()
+        );
+        assert_eq!(
+            std::mem::size_of_val(&*create_handler),
+            std::mem::size_of::<CreateToDoItemQueryHandler>()
+        );
+        assert_eq!(
+            std::mem::size_of_val(&*update_handler),
+            std::mem::size_of::<UpdateToDoItemQueryHandler>()
+        );
+        assert_eq!(
+            std::mem::size_of_val(&*delete_handler),
+            std::mem::size_of::<DeleteToDoItemQueryHandler>()
+        );
     }
 
     #[tokio::test]
     async fn test_memory_efficiency_arc_vs_box() {
         let repository = Arc::new(MockToDoItemRepository::new());
-        
+
         // Test Arc-based service
         let arc_service = ToDoItemService::new(repository.clone());
         let arc_handler1 = arc_service.get_all_handler();
         let arc_handler2 = arc_service.get_all_handler();
-        
+
         // Test Box-based service
         let box_service = ToDoItemServiceBoxed::new(repository);
         let box_handler1 = box_service.create_get_all_handler();
         let box_handler2 = box_service.create_get_all_handler();
-        
+
         // Arc handlers should point to the same memory location (shared)
         assert_eq!(Arc::as_ptr(&arc_handler1), Arc::as_ptr(&arc_handler2));
-        
+
         // Box handlers should be different instances
         assert_ne!(&*box_handler1 as *const _, &*box_handler2 as *const _);
     }
@@ -272,10 +287,10 @@ mod tests {
     fn test_handler_implementation() {
         let repository = Arc::new(MockToDoItemRepository::new());
         let service = ToDoItemService::new(repository);
-        
+
         // Verify that handlers are properly wrapped in Arc
         let handler = service.get_handler();
         // Just verify we can get the handler without panicking
         assert!(Arc::strong_count(&handler) >= 1);
     }
-} 
+}

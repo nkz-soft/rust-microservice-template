@@ -52,7 +52,7 @@ mod tests {
         TEST_SERVER_ONCE.get_or_init(Server::start).await;
         reqwest::Client::new()
     }
-    
+
     #[serial]
     #[tokio::test]
     async fn start_server_and_test() {
