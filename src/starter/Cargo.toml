@@ -1,6 +1,6 @@
 [package]
 name = "starter"
-version = "0.5.5"
+version = "0.5.6"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -27,3 +27,5 @@ testcontainers-modules.workspace = true
 ctor.workspace = true
 serial_test.workspace = true
 uuid.workspace = true
+async-trait.workspace = true
+domain = { path = "../domain" }

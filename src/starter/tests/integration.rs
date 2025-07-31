@@ -8,8 +8,8 @@ mod tests {
     use std::collections::HashMap;
     use uuid::Uuid;
 
-    pub(crate) const CONFIG_FILE_PATH: &str = "./../../";
     const WEB_SERVER_PATH: &str = "http://localhost:8181/";
+
     #[serial]
     #[tokio::test]
     async fn start_server_and_test() {

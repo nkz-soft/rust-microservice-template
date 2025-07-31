@@ -1,4 +1,3 @@
-use crate::tests::CONFIG_FILE_PATH;
 use ctor::dtor;
 use std::time::Duration;
 use testcontainers::core::IntoContainerPort;
@@ -7,6 +6,8 @@ use testcontainers_modules::postgres::Postgres;
 use testcontainers_modules::testcontainers::runners::AsyncRunner;
 use tokio::sync::OnceCell;
 use tokio::task::JoinHandle;
+
+const CONFIG_FILE_PATH: &str = "./../../";
 
 #[macro_export]
 macro_rules! prepare_test_environment {
