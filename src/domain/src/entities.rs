@@ -5,7 +5,7 @@ use uuid::Uuid;
 use crate::entity;
 use crate::schema::to_do_items;
 
-#[derive(Queryable, Insertable, AsChangeset, Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Queryable, Insertable, AsChangeset, Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[diesel(table_name = to_do_items)]
 pub struct ToDoItem {
     pub id: Uuid,
