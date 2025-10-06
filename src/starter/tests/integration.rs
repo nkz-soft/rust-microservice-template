@@ -2,13 +2,31 @@ mod utils;
 
 #[cfg(test)]
 mod tests {
-    use crate::prepare_test_environment;
-    use crate::utils::server_utils;
-    use serial_test::serial;
+    use crate::utils::test_server;
+use serial_test::serial;
     use std::collections::HashMap;
+    use ctor::dtor;
     use uuid::Uuid;
 
+    use crate::{prepare_test_environment,
+        utils::test_server::TEST_SERVER_ONCE,
+
+    };
+
     const WEB_SERVER_PATH: &str = "http://localhost:8181/";
+
+    //see https://stackoverflow.com/questions/78969766/how-can-i-call-drop-in-a-tokio-static-oncelock-in-rust
+    #[dtor]
+    fn cleanup() {
+        //This is crazy but it works
+        let id = TEST_SERVER_ONCE.get().unwrap().container().id();
+    
+        std::process::Command::new("docker")
+            .arg("kill")
+            .arg(id)
+            .output()
+            .expect("failed to kill container");
+    }
 
     #[serial]
     #[tokio::test]

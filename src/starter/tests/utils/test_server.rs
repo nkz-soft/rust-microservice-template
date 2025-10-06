@@ -12,7 +12,7 @@ const CONFIG_FILE_PATH: &str = "./../../";
 #[macro_export]
 macro_rules! prepare_test_environment {
     () => {{
-        server_utils::init().await;
+        test_server::init().await;
         reqwest::Client::new()
     }};
 }
