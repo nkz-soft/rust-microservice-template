@@ -22,11 +22,11 @@ utoipa-swagger-ui = { version = "8.1.1", features = ["actix-web"] }
 
 # Serialization
 serde = { version = "1.0.219", features = ["derive"] }
-serde_json = "1.0.141"
+serde_json = "1.0.145"
 
 # Async
-tokio = { version = "1.47.1", features = ["full"] }
-async-trait = "0.1.88"
+tokio = { version = "1.47.0", features = ["full"] }
+async-trait = "0.1.89"
 
 # Database and ORM
 tokio-postgres = { version = "0.7.13", features = ["with-uuid-1"] }
@@ -40,7 +40,7 @@ tracing = "0.1.41"
 
 # Configuration
 dotenv = "0.15.0"
-config = "0.15.11"
+config = "0.15.16"
 
 # Error Handling
 anyhow = "1.0.98"
@@ -54,5 +54,5 @@ serial_test = "3.2.0"
 
 # Misc
 ctor = "0.2.9"
-uuid = { version = "1.17.0", features = ["v4", "serde"] }
+uuid = { version = "1.18.1", features = ["v4", "serde"] }
 readonly = "0.2.13"

@@ -1,18 +1,16 @@
 use crate::queries::*;
 use crate::repositories::*;
 use domain::ToDoItem;
-use std::rc::Rc;
+use std::sync::Arc;
 use uuid::Uuid;
 
 pub struct GetToDoItemQueryHandler {
-    repository: Rc<dyn ToDoItemRepository>,
+    repository: Arc<dyn ToDoItemRepository + Send + Sync>,
 }
 
 impl GetToDoItemQueryHandler {
-    pub fn new(repository: Rc<dyn ToDoItemRepository>) -> GetToDoItemQueryHandler {
-        GetToDoItemQueryHandler {
-            repository: repository.clone(),
-        }
+    pub fn new(repository: Arc<dyn ToDoItemRepository + Send + Sync>) -> GetToDoItemQueryHandler {
+        GetToDoItemQueryHandler { repository }
     }
 
     pub async fn execute(&self, query: GetToDoItemQuery) -> anyhow::Result<ToDoItem> {
@@ -21,14 +19,14 @@ impl GetToDoItemQueryHandler {
 }
 
 pub struct GetAllToDoItemQueryHandler {
-    repository: Rc<dyn ToDoItemRepository>,
+    repository: Arc<dyn ToDoItemRepository + Send + Sync>,
 }
 
 impl GetAllToDoItemQueryHandler {
-    pub fn new(repository: Rc<dyn ToDoItemRepository>) -> GetAllToDoItemQueryHandler {
-        GetAllToDoItemQueryHandler {
-            repository: repository.clone(),
-        }
+    pub fn new(
+        repository: Arc<dyn ToDoItemRepository + Send + Sync>,
+    ) -> GetAllToDoItemQueryHandler {
+        GetAllToDoItemQueryHandler { repository }
     }
 
     pub async fn execute(&self) -> anyhow::Result<Vec<ToDoItem>> {
@@ -37,14 +35,14 @@ impl GetAllToDoItemQueryHandler {
 }
 
 pub struct CreateToDoItemQueryHandler {
-    repository: Rc<dyn ToDoItemRepository>,
+    repository: Arc<dyn ToDoItemRepository + Send + Sync>,
 }
 
 impl CreateToDoItemQueryHandler {
-    pub fn new(repository: Rc<dyn ToDoItemRepository>) -> CreateToDoItemQueryHandler {
-        CreateToDoItemQueryHandler {
-            repository: repository.clone(),
-        }
+    pub fn new(
+        repository: Arc<dyn ToDoItemRepository + Send + Sync>,
+    ) -> CreateToDoItemQueryHandler {
+        CreateToDoItemQueryHandler { repository }
     }
 
     pub async fn execute(&self, query: CreateToDoItemQuery) -> anyhow::Result<Uuid> {
@@ -55,14 +53,14 @@ impl CreateToDoItemQueryHandler {
 }
 
 pub struct UpdateToDoItemQueryHandler {
-    repository: Rc<dyn ToDoItemRepository>,
+    repository: Arc<dyn ToDoItemRepository + Send + Sync>,
 }
 
 impl UpdateToDoItemQueryHandler {
-    pub fn new(repository: Rc<dyn ToDoItemRepository>) -> UpdateToDoItemQueryHandler {
-        UpdateToDoItemQueryHandler {
-            repository: repository.clone(),
-        }
+    pub fn new(
+        repository: Arc<dyn ToDoItemRepository + Send + Sync>,
+    ) -> UpdateToDoItemQueryHandler {
+        UpdateToDoItemQueryHandler { repository }
     }
 
     pub async fn execute(&self, query: UpdateToDoItemQuery) -> anyhow::Result<Uuid> {
@@ -73,14 +71,14 @@ impl UpdateToDoItemQueryHandler {
 }
 
 pub struct DeleteToDoItemQueryHandler {
-    repository: Rc<dyn ToDoItemRepository>,
+    repository: Arc<dyn ToDoItemRepository + Send + Sync>,
 }
 
 impl DeleteToDoItemQueryHandler {
-    pub fn new(repository: Rc<dyn ToDoItemRepository>) -> DeleteToDoItemQueryHandler {
-        DeleteToDoItemQueryHandler {
-            repository: repository.clone(),
-        }
+    pub fn new(
+        repository: Arc<dyn ToDoItemRepository + Send + Sync>,
+    ) -> DeleteToDoItemQueryHandler {
+        DeleteToDoItemQueryHandler { repository }
     }
 
     pub async fn execute(&self, query: DeleteToDoItemQuery) -> anyhow::Result<()> {
