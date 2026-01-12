@@ -2182,9 +2182,9 @@ dependencies = [
 
 [[package]]
 name = "problem_details"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "777f7cf33eca7f41687a047c133ec7df9a03b13757a2666062d8b9cfa446e397"
+checksum = "d50e8b46a2f32e61ae82888734e24627ea0f8c9bc7c5fc8d0c3e0eb7ed0ff5ab"
 dependencies = [
  "actix-web",
  "http 1.3.1",
