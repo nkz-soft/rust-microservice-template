@@ -11,48 +11,48 @@ resolver = "2"
 [workspace.dependencies]
 
 # Web
-actix-web = "4.11.0"
-problem_details = { version = "0.8.0", features = ["actix", "json"] }
-http = "1.3.1"
+actix-web = "4.13.0"
+problem_details = { version = "0.9.0", features = ["actix", "json"] }
+http = "1.4.0"
 
 # OpenAPI
 utoipa = { version = "5.4.0", features = ["actix_extras", "uuid"] }
 utoipa-actix-web = "0.1.2"
-utoipa-swagger-ui = { version = "8.1.1", features = ["actix-web"] }
+utoipa-swagger-ui = { version = "9.0.2", features = ["actix-web"] }
 
 # Serialization
-serde = { version = "1.0.219", features = ["derive"] }
-serde_json = "1.0.145"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
 
 # Async
-tokio = { version = "1.47.0", features = ["full"] }
+tokio = { version = "1.49.0", features = ["full"] }
 async-trait = "0.1.89"
 
 # Database and ORM
-tokio-postgres = { version = "0.7.13", features = ["with-uuid-1"] }
-diesel = { version = "2.2.12", features = ["postgres", "r2d2", "uuid"] }
-diesel_migrations = "2.0.0"
+tokio-postgres = { version = "0.7.16", features = ["with-uuid-1"] }
+diesel = { version = "2.3.6", features = ["postgres", "r2d2", "uuid"] }
+diesel_migrations = "2.3.1"
 
 # Logging
-log = "0.4.27"
-env_logger = "0.11.6"
-tracing = "0.1.41"
+log = "0.4.29"
+env_logger = "0.11.9"
+tracing = "0.1.44"
 
 # Configuration
 dotenv = "0.15.0"
-config = "0.15.16"
+config = "0.15.19"
 
 # Error Handling
-anyhow = "1.0.98"
-thiserror = "2.0.12"
+anyhow = "1.0.102"
+thiserror = "2.0.18"
 
 # Testing
-testcontainers = "0.23.3"
-testcontainers-modules = { version = "0.11.6", features = ["postgres"] }
-reqwest = { version = "0.12.22", features = ["json"]}
-serial_test = "3.2.0"
+testcontainers = "0.27.1"
+testcontainers-modules = { version = "0.15.0", features = ["postgres"] }
+reqwest = { version = "0.13.2", features = ["json"]}
+serial_test = "3.4.0"
 
 # Misc
-ctor = "0.2.9"
-uuid = { version = "1.18.1", features = ["v4", "serde"] }
+ctor = "0.6.3"
+uuid = { version = "1.21.0", features = ["v4", "serde"] }
 readonly = "0.2.13"
