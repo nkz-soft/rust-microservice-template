@@ -50,6 +50,20 @@ mod tests {
 
     #[serial]
     #[tokio::test]
+    async fn test_ready() {
+        let client = prepare_test_environment!();
+
+        let response = client
+            .get(WEB_SERVER_PATH.to_owned() + "healthz/ready")
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        assert!(response.status().is_success());
+    }
+
+    #[serial]
+    #[tokio::test]
     async fn test_get_by_id() {
         let client = prepare_test_environment!();
         let mut map_create = HashMap::new();
