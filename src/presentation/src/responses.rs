@@ -1,15 +1,25 @@
+use domain::ToDoItem;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-//TODO We need to implement mapping from entity to response
 #[readonly::make]
 #[derive(Deserialize, Serialize, ToSchema)]
 pub struct ToDoItemResponse {
     /// The id of the to-do item
     pub id: Uuid,
     /// The title of the to-do item
-    pub title: String,
+    pub title: Option<String>,
     /// The note of the to-do item
-    pub note: String,
+    pub note: Option<String>,
+}
+
+impl From<ToDoItem> for ToDoItemResponse {
+    fn from(item: ToDoItem) -> Self {
+        Self {
+            id: item.id,
+            title: item.title,
+            note: item.note,
+        }
+    }
 }
