@@ -1,4 +1,9 @@
+use actix_web::error::ErrorServiceUnavailable;
+use actix_web::web::Data;
 use actix_web::{get, Error, HttpRequest, HttpResponse};
+use diesel::connection::SimpleConnection;
+use infrastructure::DbPool;
+use tokio::task;
 
 const OK_STATUS: &str = "Ok";
 
@@ -25,6 +30,21 @@ pub async fn live(_: HttpRequest) -> actix_web::Result<HttpResponse, Error> {
 /// This endpoint is used to check if the application is currently ready to handle requests.
 /// It returns a response with the current status of the application.
 #[get("ready")]
-pub async fn ready(_: HttpRequest) -> actix_web::Result<HttpResponse, Error> {
+pub async fn ready(pool: Data<DbPool>, _: HttpRequest) -> actix_web::Result<HttpResponse, Error> {
+    let pool = pool.clone();
+
+    task::spawn_blocking(move || -> Result<(), String> {
+        let mut connection = pool
+            .get()
+            .map_err(|err| format!("failed to acquire database connection: {err}"))?;
+        connection
+            .batch_execute("SELECT 1;")
+            .map_err(|err| format!("failed to execute readiness query: {err}"))?;
+        Ok(())
+    })
+    .await
+    .map_err(|err| ErrorServiceUnavailable(format!("readiness task join failure: {err}")))?
+    .map_err(ErrorServiceUnavailable)?;
+
     Ok(HttpResponse::Ok().body(OK_STATUS))
 }

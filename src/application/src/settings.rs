@@ -1,6 +1,7 @@
 use anyhow::Result;
 use config::{Config, ConfigError, Environment, File};
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 pub const CONFIG_FILE_NAME: &str = "config.app.toml";
 pub const DEFAULT_ENV_PREFIX_NAME: &str = "MICROSERVICE";
 
@@ -9,7 +10,8 @@ pub const DEFAULT_ENV_PREFIX_NAME: &str = "MICROSERVICE";
 pub struct Settings {
     pub service: Service,
     pub database: Database,
-    pub path: Option<String>,
+    #[serde(skip)]
+    path: Option<PathBuf>,
 }
 
 #[readonly::make]
@@ -35,7 +37,7 @@ impl Default for Settings {
             database: Database {
                 database_url: "postgres://postgres:postgres@localhost:5432/rust_template_db".into(),
             },
-            path: Some("./".into()),
+            path: Some(PathBuf::from(".")),
         }
     }
 }
@@ -43,16 +45,23 @@ impl Default for Settings {
 impl Settings {
     pub fn with_path(path: &str) -> Self {
         Self {
-            path: Some(path.into()),
+            path: Some(PathBuf::from(path)),
             ..Self::default()
         }
     }
 
     pub fn load(&self) -> Result<Self, ConfigError> {
-        let builder = Config::builder();
-        let full_path = self.path.clone().unwrap() + CONFIG_FILE_NAME;
+        let mut builder = Config::builder()
+            .set_default("service.http_url", self.service.http_url.clone())?
+            .set_default("service.service_name", self.service.service_name.clone())?
+            .set_default("database.database_url", self.database.database_url.clone())?;
+
+        if let Some(path) = &self.path {
+            let config_path = path.join(CONFIG_FILE_NAME);
+            builder = builder.add_source(File::from(config_path).required(false));
+        }
+
         builder
-            .add_source(File::with_name(full_path.as_str()).required(true))
             .add_source(
                 Environment::default()
                     .prefix(DEFAULT_ENV_PREFIX_NAME)
@@ -107,5 +116,24 @@ mod tests {
         );
         env::remove_var("MICROSERVICE__SERVICE__HTTP_URL");
         env::remove_var("MICROSERVICE__DATABASE__DATABASE_URL");
+    }
+
+    #[serial]
+    #[test]
+    fn missing_file_path_uses_env_and_defaults_test() {
+        env::set_var("MICROSERVICE__SERVICE__HTTP_URL", "127.0.0.1:9191");
+
+        let settings = Settings::with_path("./definitely-missing-config-dir/")
+            .load()
+            .unwrap();
+
+        assert_eq!(settings.service.http_url, "127.0.0.1:9191");
+        assert_eq!(settings.service.service_name, "MICROSERVICE");
+        assert_eq!(
+            settings.database.database_url,
+            "postgres://postgres:postgres@localhost:5432/rust_template_db"
+        );
+
+        env::remove_var("MICROSERVICE__SERVICE__HTTP_URL");
     }
 }

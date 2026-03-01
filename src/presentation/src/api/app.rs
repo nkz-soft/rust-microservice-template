@@ -1,6 +1,6 @@
 use actix_web::web::Data;
 use actix_web::{delete, post, put};
-use actix_web::{get, http, web, HttpResponse, Result};
+use actix_web::{get, web, HttpResponse, Result};
 use application::CreateToDoItemQuery;
 use application::DeleteToDoItemQuery;
 use application::GetToDoItemQuery;
@@ -25,11 +25,14 @@ const TODO: &str = "todo";
 #[get("")]
 pub async fn get_all(service: Data<ToDoItemService>) -> Result<HttpResponse, HttpError> {
     let handler = service.get_all_handler();
-    let data = handler.execute().await?;
+    let data: Vec<ToDoItemResponse> = handler
+        .execute()
+        .await?
+        .into_iter()
+        .map(ToDoItemResponse::from)
+        .collect();
 
-    Ok(HttpResponse::Ok()
-        .content_type(http::header::ContentType::json())
-        .body(serde_json::to_string(&data)?))
+    Ok(HttpResponse::Ok().json(data))
 }
 
 /// Retrieves a to-do item by Id.
@@ -37,7 +40,7 @@ pub async fn get_all(service: Data<ToDoItemService>) -> Result<HttpResponse, Htt
     context_path = "/to-do-items",
     tag = TODO,
     responses(
-        (status = 200, description = "Get todo item by id", body = [ToDoItemResponse])
+        (status = 200, description = "Get todo item by id", body = ToDoItemResponse)
     ),
     params(
         ("id" = Uuid, Path, description = "Id of the to-do item")
@@ -49,13 +52,13 @@ pub async fn get_by_id(
     id: web::Path<Uuid>,
 ) -> Result<HttpResponse, HttpError> {
     let handler = service.get_handler();
-    let data = handler
-        .execute(GetToDoItemQuery::new(Some(id.into_inner())))
-        .await?;
+    let data = ToDoItemResponse::from(
+        handler
+            .execute(GetToDoItemQuery::new(Some(id.into_inner())))
+            .await?,
+    );
 
-    Ok(HttpResponse::Ok()
-        .content_type(http::header::ContentType::json())
-        .body(serde_json::to_string(&data)?))
+    Ok(HttpResponse::Ok().json(data))
 }
 
 /// Creates a new to-do item.
@@ -63,7 +66,7 @@ pub async fn get_by_id(
     context_path = "/to-do-items",
     tag = TODO,
     responses(
-        (status = 200, description = "Create todo item", body = [ToDoItemResponse])
+        (status = 201, description = "Create todo item", body = Uuid)
     ),
     request_body = CreateToDoItemRequest,
 )]
@@ -79,9 +82,7 @@ pub async fn create(
         .execute(CreateToDoItemQuery::new(&item.title, &item.note))
         .await?;
 
-    Ok(HttpResponse::Ok()
-        .content_type(http::header::ContentType::json())
-        .body(serde_json::to_string(&data)?))
+    Ok(HttpResponse::Created().json(data))
 }
 
 /// Updates a to-do item by Id.
@@ -89,7 +90,7 @@ pub async fn create(
     context_path = "/to-do-items",
     tag = TODO,
     responses(
-        (status = 200, description = "Update todo item", body = [ToDoItemResponse])
+        (status = 200, description = "Update todo item")
     ),
     params(
         ("id", description = "Id of the to-do item to update")
@@ -120,7 +121,7 @@ pub async fn update(
     context_path = "/to-do-items",
     tag = TODO,
     responses(
-        (status = 200, description = "Delete todo item", body = [ToDoItemResponse])
+        (status = 200, description = "Delete todo item")
     ),
     params(
         ("id", description = "Id of the to-do item to delete")
