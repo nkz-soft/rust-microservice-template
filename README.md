@@ -38,11 +38,16 @@ git clone https://github.com/nkz-soft/rust-microservice-template.git
 cd rust-microservice-template/deployment/docker
 ```
 
-3. You can use the included Dockerfile and docker-compose.yml files to build and deploy the microservice.
-   Simply run the following command in the root directory of your project:
+3. Use the deployment scripts in `deployment/docker` to start the required services.
+   To start the full stack, run:
 ```bash
-./docker-compose.sh up --build -d
+./docker-compose-all.sh up --build -d
 ```
+   Available deployment files in this directory:
+   - `docker-compose-app.yaml`
+   - `docker-compose-infrastructure.yaml`
+   - `docker-compose-all.sh`
+   - `docker-compose-infrastructure.sh`
 4. Verify that the microservice is running correctly by visiting the endpoint in your web browser or using a tool like curl:
 ```bash
 curl -v  http://localhost:8181/to-do-items
