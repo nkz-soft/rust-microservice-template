@@ -4,6 +4,8 @@ mod utils;
 mod tests {
     use crate::utils::test_server;
     use ctor::dtor;
+    use reqwest::StatusCode;
+    use serde_json::json;
     use serial_test::serial;
     use std::collections::HashMap;
     use uuid::Uuid;
@@ -172,5 +174,101 @@ mod tests {
 
         // Assert
         assert!(response.status().is_success());
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_create_rejects_blank_title() {
+        let client = prepare_test_environment!();
+
+        let response = client
+            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
+            .json(&json!({
+                "title": "   ",
+                "note": "note1"
+            }))
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_update_rejects_blank_note() {
+        let client = prepare_test_environment!();
+        let mut map_create = HashMap::new();
+        map_create.insert("title", "title1");
+        map_create.insert("note", "note1");
+
+        let id = client
+            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
+            .json(&map_create)
+            .send()
+            .await
+            .expect("Failed to execute request.")
+            .json::<Uuid>()
+            .await
+            .expect("Failed to deserialize response.");
+
+        let response = client
+            .put(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}", id = id).as_str())
+            .json(&json!({
+                "title": "title1",
+                "note": "   "
+            }))
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_get_all_rejects_invalid_query_parameters() {
+        let client = prepare_test_environment!();
+
+        let response = client
+            .get(WEB_SERVER_PATH.to_owned() + "to-do-items?page=0&page_size=20")
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_get_all_accepts_valid_query_parameters() {
+        let client = prepare_test_environment!();
+
+        let response = client
+            .get(WEB_SERVER_PATH.to_owned() + "to-do-items?page=1&page_size=10&search=title")
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_create_rejects_oversized_payload() {
+        let client = prepare_test_environment!();
+        let oversized_body = json!({
+            "title": "a".repeat(9000),
+            "note": "note1"
+        });
+
+        let response = client
+            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
+            .json(&oversized_body)
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     }
 }

@@ -83,3 +83,5 @@ tests/rustdoc-gui/src/**.lock
 *.sln.iml
 
 # Before adding new lines, see the comment at the top.
+.ai/
+.aiassistant/

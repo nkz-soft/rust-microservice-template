@@ -28,4 +28,5 @@ ctor.workspace = true
 serial_test.workspace = true
 uuid.workspace = true
 async-trait.workspace = true
+serde_json.workspace = true
 domain = { path = "../domain" }

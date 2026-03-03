@@ -17,6 +17,7 @@ problem_details.workspace = true
 http.workspace = true
 diesel.workspace = true
 tokio.workspace = true
+validator.workspace = true
 
 application = { path = "../application" }
 infrastructure = { path = "../infrastructure" }
