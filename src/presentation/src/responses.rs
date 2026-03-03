@@ -23,3 +23,12 @@ impl From<ToDoItem> for ToDoItemResponse {
         }
     }
 }
+
+#[readonly::make]
+#[derive(Deserialize, Serialize, ToSchema)]
+pub struct ProblemDetailsResponse {
+    /// HTTP status code.
+    pub status: u16,
+    /// Human-readable explanation specific to this occurrence of the problem.
+    pub detail: String,
+}

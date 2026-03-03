@@ -45,6 +45,7 @@ config = "0.15.19"
 # Error Handling
 anyhow = "1.0.102"
 thiserror = "2.0.18"
+validator = { version = "0.20.0", features = ["derive"] }
 
 # Testing
 testcontainers = "0.27.1"

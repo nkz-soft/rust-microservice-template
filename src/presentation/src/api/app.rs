@@ -7,10 +7,11 @@ use application::GetToDoItemQuery;
 use application::ToDoItemService;
 use application::UpdateToDoItemQuery;
 use uuid::Uuid;
+use validator::Validate;
 
 use crate::errors::HttpError;
-use crate::requests::{CreateToDoItemRequest, UpdateToDoItemRequest};
-use crate::responses::ToDoItemResponse;
+use crate::requests::{CreateToDoItemRequest, GetAllToDoItemsQueryRequest, UpdateToDoItemRequest};
+use crate::responses::{ProblemDetailsResponse, ToDoItemResponse};
 
 const TODO: &str = "todo";
 
@@ -19,16 +20,38 @@ const TODO: &str = "todo";
     context_path = "/to-do-items",
     tag = TODO,
     responses(
-        (status = 200, description = "List current todo items", body = [ToDoItemResponse])
-    )
+        (status = 200, description = "List current todo items", body = [ToDoItemResponse]),
+        (status = 400, description = "Validation error", body = ProblemDetailsResponse)
+    ),
+    params(GetAllToDoItemsQueryRequest)
 )]
 #[get("")]
-pub async fn get_all(service: Data<ToDoItemService>) -> Result<HttpResponse, HttpError> {
+pub async fn get_all(
+    service: Data<ToDoItemService>,
+    query: web::Query<GetAllToDoItemsQueryRequest>,
+) -> Result<HttpResponse, HttpError> {
+    query.validate()?;
+    query.validate_search()?;
     let handler = service.get_all_handler();
+    let query = query.into_inner();
+    let search = query.normalized_search();
     let data: Vec<ToDoItemResponse> = handler
         .execute()
         .await?
         .into_iter()
+        .filter(|item| {
+            search.as_ref().is_none_or(|value| {
+                item.title
+                    .as_ref()
+                    .is_some_and(|title| title.to_ascii_lowercase().contains(value))
+                    || item
+                        .note
+                        .as_ref()
+                        .is_some_and(|note| note.to_ascii_lowercase().contains(value))
+            })
+        })
+        .skip(query.offset())
+        .take(query.limit())
         .map(ToDoItemResponse::from)
         .collect();
 
@@ -66,7 +89,8 @@ pub async fn get_by_id(
     context_path = "/to-do-items",
     tag = TODO,
     responses(
-        (status = 201, description = "Create todo item", body = Uuid)
+        (status = 201, description = "Create todo item", body = Uuid),
+        (status = 400, description = "Validation error", body = ProblemDetailsResponse)
     ),
     request_body = CreateToDoItemRequest,
 )]
@@ -75,6 +99,7 @@ pub async fn create(
     service: Data<ToDoItemService>,
     item: web::Json<CreateToDoItemRequest>,
 ) -> Result<HttpResponse, HttpError> {
+    item.validate()?;
     let handler = service.create_handler();
 
     // Fixed bug: was using &item.title for both title and note
@@ -90,7 +115,8 @@ pub async fn create(
     context_path = "/to-do-items",
     tag = TODO,
     responses(
-        (status = 200, description = "Update todo item")
+        (status = 200, description = "Update todo item"),
+        (status = 400, description = "Validation error", body = ProblemDetailsResponse)
     ),
     params(
         ("id", description = "Id of the to-do item to update")
@@ -103,6 +129,7 @@ pub async fn update(
     id: web::Path<Uuid>,
     item: web::Json<UpdateToDoItemRequest>,
 ) -> Result<HttpResponse, HttpError> {
+    item.validate()?;
     let handler = service.update_handler();
 
     handler

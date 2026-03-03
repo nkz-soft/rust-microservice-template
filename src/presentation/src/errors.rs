@@ -1,3 +1,4 @@
+use actix_web::error::{JsonPayloadError, QueryPayloadError};
 use actix_web::web::Json;
 use actix_web::{HttpResponse, ResponseError};
 use http::StatusCode as HttpStatusCode;
@@ -5,10 +6,29 @@ use infrastructure as errors;
 use problem_details::{JsonProblemDetails, ProblemDetails};
 use serde_json::Error as SerdeError;
 use std::fmt::{Display, Formatter};
+use validator::ValidationErrors;
 
 #[derive(Debug)]
 pub enum HttpError {
     Problem(ProblemDetails),
+}
+
+impl HttpError {
+    pub fn bad_request(detail: impl Into<String>) -> Self {
+        HttpError::Problem(
+            ProblemDetails::new()
+                .with_status(HttpStatusCode::BAD_REQUEST)
+                .with_detail(detail.into()),
+        )
+    }
+
+    pub fn internal_server_error(detail: impl Into<String>) -> Self {
+        HttpError::Problem(
+            ProblemDetails::new()
+                .with_status(HttpStatusCode::INTERNAL_SERVER_ERROR)
+                .with_detail(detail.into()),
+        )
+    }
 }
 
 impl Display for HttpError {
@@ -29,11 +49,25 @@ impl ResponseError for HttpError {
 
 impl From<SerdeError> for HttpError {
     fn from(err: SerdeError) -> Self {
-        HttpError::Problem(
-            ProblemDetails::new()
-                .with_status(HttpStatusCode::INTERNAL_SERVER_ERROR)
-                .with_detail(err.to_string()),
-        )
+        HttpError::bad_request(err.to_string())
+    }
+}
+
+impl From<ValidationErrors> for HttpError {
+    fn from(err: ValidationErrors) -> Self {
+        HttpError::bad_request(err.to_string())
+    }
+}
+
+impl From<JsonPayloadError> for HttpError {
+    fn from(err: JsonPayloadError) -> Self {
+        HttpError::bad_request(err.to_string())
+    }
+}
+
+impl From<QueryPayloadError> for HttpError {
+    fn from(err: QueryPayloadError) -> Self {
+        HttpError::bad_request(err.to_string())
     }
 }
 
@@ -46,18 +80,10 @@ impl From<anyhow::Error> for HttpError {
                         .with_status(HttpStatusCode::NOT_FOUND)
                         .with_detail(err.to_string()),
                 ),
-                _ => HttpError::Problem(
-                    ProblemDetails::new()
-                        .with_status(HttpStatusCode::INTERNAL_SERVER_ERROR)
-                        .with_detail(err.to_string()),
-                ),
+                _ => HttpError::internal_server_error(err.to_string()),
             }
         } else {
-            HttpError::Problem(
-                ProblemDetails::new()
-                    .with_status(HttpStatusCode::INTERNAL_SERVER_ERROR)
-                    .with_detail(err.to_string()),
-            )
+            HttpError::internal_server_error(err.to_string())
         }
     }
 }

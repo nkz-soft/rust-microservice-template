@@ -15,6 +15,7 @@ If you're using this repository for your learning, samples or your project, plea
 ## Table of Contents
 
 - [Installation](#installation)
+- [API Validation](#api-validation)
 - [Architecture](#architecture )
 - [Deployment](#deployment)
 - [Plan](#plan)
@@ -52,6 +53,52 @@ cd rust-microservice-template/deployment/docker
 ```bash
 curl -v  http://localhost:8181/to-do-items
 ```
+
+## API Validation
+
+The API validates request bodies and query parameters before they reach the application layer.
+
+### Create and update requests
+
+`POST /to-do-items` and `PUT /to-do-items/{id}` enforce these rules:
+
+- `title` is required, must not be blank, and must be at most 120 characters
+- `note` is required, must not be blank, and must be at most 1000 characters
+- JSON request bodies larger than 8 KB are rejected
+
+Example valid create request:
+
+```bash
+curl -X POST http://localhost:8181/to-do-items \
+  -H "Content-Type: application/json" \
+  -d "{\"title\":\"Buy milk\",\"note\":\"2 liters\"}"
+```
+
+Example invalid create request:
+
+```bash
+curl -X POST http://localhost:8181/to-do-items \
+  -H "Content-Type: application/json" \
+  -d "{\"title\":\"   \",\"note\":\"2 liters\"}"
+```
+
+Invalid payloads return `400 Bad Request` with a problem-details JSON response.
+
+### List query parameters
+
+`GET /to-do-items` supports optional validated query parameters:
+
+- `page`: one-based page number, default `1`
+- `page_size`: number of items per page, default `20`, maximum `100`
+- `search`: optional case-insensitive filter applied to title and note, must not be blank
+
+Example:
+
+```bash
+curl "http://localhost:8181/to-do-items?page=1&page_size=10&search=milk"
+```
+
+Invalid query parameters also return `400 Bad Request`.
 
 ### Configuration
 To configure the microservice, you will need to modify the configuration file: config.app.toml.
@@ -113,6 +160,7 @@ CQRS (Command Query Responsibility Segregation) is a pattern that separates the 
 - [x] Advanced error handling
 - [x] Health checks
 - [x] Problem details
+- [x] API Validation
 - [ ] Coming soon :)
 
 ## Technologies used
@@ -125,4 +173,5 @@ CQRS (Command Query Responsibility Segregation) is a pattern that separates the 
 - [diesel](https://github.com/diesel-rs/diesel): Diesel is a Rust ORM and query builder.
 - [diesel_migrations](https://github.com/diesel-rs/diesel_migrations): Diesel migrations for Rust.
 - [problem_details](https://github.com/frenetisch-applaudierend/problem-details-rs): Problem details for Rust.
+- [validator](https://github.com/Keats/validator): Request and query validation for Rust structs.
 
