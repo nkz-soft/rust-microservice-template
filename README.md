@@ -15,8 +15,10 @@ If you're using this repository for your learning, samples or your project, plea
 ## Table of Contents
 
 - [Installation](#installation)
+- [Architecture](#architecture)
+- [Implementation Details](#implementation-details)
 - [API Validation](#api-validation)
-- [Architecture](#architecture )
+- [Configuration](#configuration)
 - [Deployment](#deployment)
 - [Plan](#plan)
 - [Technologies - Libraries](#technologies-used)
@@ -54,11 +56,37 @@ cd rust-microservice-template/deployment/docker
 curl -v  http://localhost:8181/to-do-items
 ```
 
-## API Validation
+## Architecture
+The microservice follows a layered Domain Driven Design structure with a separate presentation boundary for the HTTP API.
+
+### Domain Layer
+The Domain Layer is the core of the system. It contains the entities and domain concepts that model the business problem.
+In Rust, this layer is implemented with structs, traits, enums, and functions that stay independent from HTTP and storage concerns.
+
+### Application Layer
+The Application Layer coordinates use cases.
+It translates incoming requests into commands and queries, invokes domain behavior through handlers and services, and defines repository contracts for persistence.
+
+### Infrastructure Layer
+The Infrastructure Layer provides concrete integrations such as PostgreSQL access, Diesel repositories, and migrations.
+It is where external systems are wired to the application contracts.
+
+### Presentation Layer
+The Presentation Layer exposes the HTTP API.
+It owns routing, request and query parsing, validation, response mapping, problem-details error responses, and OpenAPI documentation.
+
+### CQRS
+CQRS (Command Query Responsibility Segregation) is used to separate read and write flows into distinct commands, queries, and handlers.
+
+## Implementation Details
+
+This section covers how the template is put together at the API and runtime level.
+
+### API Validation
 
 The API validates request bodies and query parameters before they reach the application layer.
 
-### Create and update requests
+#### Create and update requests
 
 `POST /to-do-items` and `PUT /to-do-items/{id}` enforce these rules:
 
@@ -84,24 +112,49 @@ curl -X POST http://localhost:8181/to-do-items \
 
 Invalid payloads return `400 Bad Request` with a problem-details JSON response.
 
-### List query parameters
+#### List query parameters
 
 `GET /to-do-items` supports optional validated query parameters:
 
 - `page`: one-based page number, default `1`
 - `page_size`: number of items per page, default `20`, maximum `100`
 - `search`: optional case-insensitive filter applied to title and note, must not be blank
+- `sort`: deterministic sorting, supports `id:asc`, `id:desc`, `title:asc`, and `title:desc`
 
 Example:
 
 ```bash
-curl "http://localhost:8181/to-do-items?page=1&page_size=10&search=milk"
+curl "http://localhost:8181/to-do-items?page=1&page_size=10&search=milk&sort=title:asc"
 ```
 
 Invalid query parameters also return `400 Bad Request`.
 
+#### List response shape
+
+`GET /to-do-items` returns a paginated payload:
+
+```json
+{
+  "items": [
+    {
+      "id": "6f8d9d10-4d9f-4b97-9cd2-53f4f4224f2e",
+      "title": "Buy milk",
+      "note": "2 liters"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "page_size": 10,
+    "total_items": 1,
+    "total_pages": 1
+  }
+}
+```
+
 ### Configuration
-To configure the microservice, you will need to modify the configuration file: config.app.toml.
+
+To configure the microservice, modify `config.app.toml`.
+
 ```toml
 [service]
 http_url = '127.0.0.1:8181'
@@ -109,36 +162,21 @@ service_name = 'rust_template_service'
 
 [database]
 database_url = 'postgres://postgres:postgres@localhost:5432/rust_template_db'
-
 ```
-You can also configure via environment variables.
+
+You can also configure the service via environment variables.
+
 ```bash
 export MICROSERVICE__SERVICE__HTTP_URL="127.0.0.1:8181"
 export MICROSERVICE__SERVICE__SERVICE_NAME="rust_template_service"
 export MICROSERVICE__DATABASE__DATABASE_URL="postgres://postgres:postgres@localhost:5432/rust_template_db"
 ```
 
-## Architecture
-The microservice is divided into three layers: the Domain Layer, the Application Layer, and the Infrastructure Layer.
+### OpenAPI and Error Handling
 
-### Domain Layer
-The Domain Layer is the heart of the Domain Driven Design (DDD) approach. It contains the business logic and rules that drive the application.
-In Rust, the Domain Layer consists of structs, traits, enums, and functions that model the problem domain in a way that is easy to understand and maintain.
+The template includes OpenAPI generation through `utoipa` and Swagger UI integration for API discovery.
 
-### Application Layer
-The Application Layer is responsible for coordinating the Domain Layer and the Infrastructure Layer.
-It translates user requests and external events into actions that the Domain Layer can understand, and communicates the results back to the user or external systems.
-
-### Infrastructure Layer
-The Infrastructure Layer is responsible for providing the necessary infrastructure to run the application.
-This can include things like databases, message queues, and external APIs.
-
-### Presentation Layer
-The presentation layer is responsible for handling user interactions and presenting information to users.
-This layer typically includes user interfaces such as web applications, desktop applications, mobile apps, or APIs.
-
-### CQRS
-CQRS (Command Query Responsibility Segregation) is a pattern that separates the read and write responsibilities of an application into separate models.
+Validation and request parsing errors are returned as problem-details responses, giving clients a structured `400 Bad Request` payload instead of ad hoc text errors.
 
 ## Deployment
 
