@@ -29,8 +29,11 @@ impl GetAllToDoItemQueryHandler {
         GetAllToDoItemQueryHandler { repository }
     }
 
-    pub async fn execute(&self) -> anyhow::Result<Vec<ToDoItem>> {
-        self.repository.get_all().await
+    pub async fn execute(
+        &self,
+        query: GetAllToDoItemsQuery,
+    ) -> anyhow::Result<PaginatedResult<ToDoItem>> {
+        self.repository.get_all(query).await
     }
 }
 

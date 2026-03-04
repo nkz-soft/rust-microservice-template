@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use application::{ToDoItemRepository, ToDoItemService};
+    use application::{GetAllToDoItemsQuery, PaginatedResult, ToDoItemRepository, ToDoItemService};
     use domain::ToDoItem;
     use std::sync::{Arc, Mutex};
     use std::time::Duration;
@@ -32,10 +32,26 @@ mod tests {
 
     #[async_trait::async_trait]
     impl ToDoItemRepository for TestToDoItemRepository {
-        async fn get_all(&self) -> anyhow::Result<Vec<ToDoItem>> {
+        async fn get_all(
+            &self,
+            query: GetAllToDoItemsQuery,
+        ) -> anyhow::Result<PaginatedResult<ToDoItem>> {
             *self.operation_count.lock().unwrap() += 1;
             sleep(Duration::from_millis(10)).await; // Simulate some work
-            Ok(self.items.lock().unwrap().clone())
+            let items = self.items.lock().unwrap().clone();
+            let total_items = items.len() as i64;
+            let paged_items = items
+                .into_iter()
+                .skip(query.offset() as usize)
+                .take(query.limit() as usize)
+                .collect();
+
+            Ok(PaginatedResult::new(
+                paged_items,
+                query.page,
+                query.page_size,
+                total_items,
+            ))
         }
 
         async fn get_by_id(&self, id: Uuid) -> anyhow::Result<ToDoItem> {
@@ -89,8 +105,11 @@ mod tests {
         assert_eq!(Arc::as_ptr(&handler2), Arc::as_ptr(&handler3));
 
         // Test that they can be used concurrently
-        let (result1, result2, result3) =
-            tokio::join!(handler1.execute(), handler2.execute(), handler3.execute());
+        let (result1, result2, result3) = tokio::join!(
+            handler1.execute(GetAllToDoItemsQuery::default()),
+            handler2.execute(GetAllToDoItemsQuery::default()),
+            handler3.execute(GetAllToDoItemsQuery::default())
+        );
 
         assert!(result1.is_ok());
         assert!(result2.is_ok());
@@ -121,7 +140,7 @@ mod tests {
         for (i, service) in cloned_services.into_iter().enumerate() {
             let task = tokio::spawn(async move {
                 let handler = service.get_all_handler();
-                let result = handler.execute().await;
+                let result = handler.execute(GetAllToDoItemsQuery::default()).await;
                 (i, result)
             });
             tasks.push(task);
@@ -158,7 +177,10 @@ mod tests {
                 match i % 4 {
                     0 => {
                         let handler = service_clone.get_all_handler();
-                        handler.execute().await.map(|items| items.len())
+                        handler
+                            .execute(GetAllToDoItemsQuery::default())
+                            .await
+                            .map(|items| items.items.len())
                     }
                     1 => {
                         let handler = service_clone.create_handler();
@@ -170,11 +192,17 @@ mod tests {
                     }
                     2 => {
                         let handler = service_clone.get_all_handler();
-                        handler.execute().await.map(|items| items.len())
+                        handler
+                            .execute(GetAllToDoItemsQuery::default())
+                            .await
+                            .map(|items| items.items.len())
                     }
                     _ => {
                         let handler = service_clone.get_all_handler();
-                        handler.execute().await.map(|items| items.len())
+                        handler
+                            .execute(GetAllToDoItemsQuery::default())
+                            .await
+                            .map(|items| items.items.len())
                     }
                 }
             });
@@ -203,7 +231,7 @@ mod tests {
             let handler = service.get_all_handler();
 
             // Use the handler briefly
-            let _ = handler.execute().await;
+            let _ = handler.execute(GetAllToDoItemsQuery::default()).await;
 
             // Service and handler should be dropped here
         }
@@ -224,7 +252,7 @@ mod tests {
         let arc_start = std::time::Instant::now();
         for _ in 0..100 {
             let handler = arc_service.get_all_handler();
-            let _ = handler.execute().await;
+            let _ = handler.execute(GetAllToDoItemsQuery::default()).await;
         }
         let arc_duration = arc_start.elapsed();
         let arc_operations = repository.get_operation_count();
@@ -236,7 +264,7 @@ mod tests {
         let box_start = std::time::Instant::now();
         for _ in 0..100 {
             let handler = box_service.create_get_all_handler();
-            let _ = handler.execute().await;
+            let _ = handler.execute(GetAllToDoItemsQuery::default()).await;
         }
         let box_duration = box_start.elapsed();
         let box_operations = repository.get_operation_count();
@@ -263,7 +291,7 @@ mod tests {
 
         let handle = tokio::spawn(async move {
             let handler = service_arc.get_all_handler();
-            handler.execute().await
+            handler.execute(GetAllToDoItemsQuery::default()).await
         });
 
         let result = handle.await.unwrap();

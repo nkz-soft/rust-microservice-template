@@ -6,6 +6,7 @@ mod tests {
     use ctor::dtor;
     use reqwest::StatusCode;
     use serde_json::json;
+    use serde_json::Value;
     use serial_test::serial;
     use std::collections::HashMap;
     use uuid::Uuid;
@@ -48,6 +49,12 @@ mod tests {
 
         // Assert
         assert!(response.status().is_success());
+        let body = response
+            .json::<Value>()
+            .await
+            .expect("Failed to deserialize response.");
+        assert!(body.get("items").is_some());
+        assert!(body.get("meta").is_some());
     }
 
     #[serial]
@@ -245,12 +252,21 @@ mod tests {
         let client = prepare_test_environment!();
 
         let response = client
-            .get(WEB_SERVER_PATH.to_owned() + "to-do-items?page=1&page_size=10&search=title")
+            .get(
+                WEB_SERVER_PATH.to_owned()
+                    + "to-do-items?page=1&page_size=10&search=title&sort=title:asc",
+            )
             .send()
             .await
             .expect("Failed to execute request.");
 
         assert_eq!(response.status(), StatusCode::OK);
+        let body = response
+            .json::<Value>()
+            .await
+            .expect("Failed to deserialize response.");
+        assert_eq!(body["meta"]["page"], 1);
+        assert_eq!(body["meta"]["page_size"], 10);
     }
 
     #[serial]
