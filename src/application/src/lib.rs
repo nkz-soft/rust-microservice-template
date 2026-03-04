@@ -13,7 +13,8 @@ pub use crate::repositories::ToDoItemRepository;
 pub use crate::dtos::ToDoItemDto;
 
 pub use crate::queries::{
-    CreateToDoItemQuery, DeleteToDoItemQuery, GetToDoItemQuery, UpdateToDoItemQuery,
+    CreateToDoItemQuery, DeleteToDoItemQuery, GetAllToDoItemsQuery, GetToDoItemQuery,
+    PaginatedResult, SortDirection, ToDoItemSort, ToDoItemSortField, UpdateToDoItemQuery,
 };
 
 pub use crate::handlers::{

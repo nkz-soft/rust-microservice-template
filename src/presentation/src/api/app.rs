@@ -3,6 +3,7 @@ use actix_web::{delete, post, put};
 use actix_web::{get, web, HttpResponse, Result};
 use application::CreateToDoItemQuery;
 use application::DeleteToDoItemQuery;
+use application::GetAllToDoItemsQuery;
 use application::GetToDoItemQuery;
 use application::ToDoItemService;
 use application::UpdateToDoItemQuery;
@@ -11,7 +12,7 @@ use validator::Validate;
 
 use crate::errors::HttpError;
 use crate::requests::{CreateToDoItemRequest, GetAllToDoItemsQueryRequest, UpdateToDoItemRequest};
-use crate::responses::{ProblemDetailsResponse, ToDoItemResponse};
+use crate::responses::{ProblemDetailsResponse, ToDoItemResponse, ToDoItemsPageResponse};
 
 const TODO: &str = "todo";
 
@@ -20,7 +21,7 @@ const TODO: &str = "todo";
     context_path = "/to-do-items",
     tag = TODO,
     responses(
-        (status = 200, description = "List current todo items", body = [ToDoItemResponse]),
+        (status = 200, description = "List current todo items", body = ToDoItemsPageResponse),
         (status = 400, description = "Validation error", body = ProblemDetailsResponse)
     ),
     params(GetAllToDoItemsQueryRequest)
@@ -31,29 +32,11 @@ pub async fn get_all(
     query: web::Query<GetAllToDoItemsQueryRequest>,
 ) -> Result<HttpResponse, HttpError> {
     query.validate()?;
-    query.validate_search()?;
+    query.validate_search().map_err(HttpError::bad_request)?;
+    query.validate_sort().map_err(HttpError::bad_request)?;
     let handler = service.get_all_handler();
-    let query = query.into_inner();
-    let search = query.normalized_search();
-    let data: Vec<ToDoItemResponse> = handler
-        .execute()
-        .await?
-        .into_iter()
-        .filter(|item| {
-            search.as_ref().is_none_or(|value| {
-                item.title
-                    .as_ref()
-                    .is_some_and(|title| title.to_ascii_lowercase().contains(value))
-                    || item
-                        .note
-                        .as_ref()
-                        .is_some_and(|note| note.to_ascii_lowercase().contains(value))
-            })
-        })
-        .skip(query.offset())
-        .take(query.limit())
-        .map(ToDoItemResponse::from)
-        .collect();
+    let query: GetAllToDoItemsQuery = query.to_query().map_err(HttpError::bad_request)?;
+    let data = ToDoItemsPageResponse::from(handler.execute(query).await?);
 
     Ok(HttpResponse::Ok().json(data))
 }

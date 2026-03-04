@@ -78,6 +78,7 @@ impl ToDoItemServiceBoxed {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{GetAllToDoItemsQuery, PaginatedResult};
     use async_trait::async_trait;
     use domain::ToDoItem;
     use std::sync::{Arc, Mutex};
@@ -109,9 +110,25 @@ mod tests {
 
     #[async_trait]
     impl ToDoItemRepository for MockToDoItemRepository {
-        async fn get_all(&self) -> anyhow::Result<Vec<ToDoItem>> {
+        async fn get_all(
+            &self,
+            query: GetAllToDoItemsQuery,
+        ) -> anyhow::Result<PaginatedResult<ToDoItem>> {
             *self.call_count.lock().unwrap() += 1;
-            Ok(self.items.lock().unwrap().clone())
+            let items = self.items.lock().unwrap().clone();
+            let total_items = items.len() as i64;
+            let paged_items = items
+                .into_iter()
+                .skip(query.offset() as usize)
+                .take(query.limit() as usize)
+                .collect();
+
+            Ok(PaginatedResult::new(
+                paged_items,
+                query.page,
+                query.page_size,
+                total_items,
+            ))
         }
 
         async fn get_by_id(&self, id: Uuid) -> anyhow::Result<ToDoItem> {
@@ -172,8 +189,8 @@ mod tests {
         let handler1 = service.get_all_handler();
         let handler2 = cloned_service.get_all_handler();
 
-        let result1 = handler1.execute().await;
-        let result2 = handler2.execute().await;
+        let result1 = handler1.execute(GetAllToDoItemsQuery::default()).await;
+        let result2 = handler2.execute(GetAllToDoItemsQuery::default()).await;
 
         assert!(result1.is_ok());
         assert!(result2.is_ok());
@@ -195,7 +212,7 @@ mod tests {
             let service_clone = service.clone();
             let handle = task::spawn(async move {
                 let handler = service_clone.get_all_handler();
-                let result = handler.execute().await;
+                let result = handler.execute(GetAllToDoItemsQuery::default()).await;
                 (i, result)
             });
             handles.push(handle);
@@ -205,7 +222,7 @@ mod tests {
         for handle in handles {
             let (task_id, result) = handle.await.unwrap();
             assert!(result.is_ok(), "Task {} failed", task_id);
-            assert_eq!(result.unwrap().len(), 2);
+            assert_eq!(result.unwrap().items.len(), 2);
         }
 
         // Verify that repository was called 10 times
@@ -276,7 +293,7 @@ mod tests {
         // Test that service can be sent across threads
         let handle = task::spawn(async move {
             let handler = service.get_all_handler();
-            handler.execute().await
+            handler.execute(GetAllToDoItemsQuery::default()).await
         });
 
         let result = handle.await.unwrap();

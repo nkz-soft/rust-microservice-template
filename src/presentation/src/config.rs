@@ -56,7 +56,8 @@ mod tests {
         query: web::Query<GetAllToDoItemsQueryRequest>,
     ) -> Result<HttpResponse, HttpError> {
         query.validate()?;
-        query.validate_search()?;
+        query.validate_search().map_err(HttpError::bad_request)?;
+        query.validate_sort().map_err(HttpError::bad_request)?;
         Ok(HttpResponse::Ok().finish())
     }
 
@@ -130,7 +131,7 @@ mod tests {
         .await;
 
         let request = test::TestRequest::get()
-            .uri("/query?page=1&page_size=10&search=todo")
+            .uri("/query?page=1&page_size=10&search=todo&sort=title:desc")
             .to_request();
         let response = test::call_service(&app, request).await;
 

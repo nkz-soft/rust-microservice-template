@@ -1,4 +1,4 @@
-use crate::errors::HttpError;
+use application::{GetAllToDoItemsQuery, SortDirection, ToDoItemSort, ToDoItemSortField};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 use validator::{Validate, ValidationError};
@@ -60,6 +60,9 @@ pub struct GetAllToDoItemsQueryRequest {
     #[serde(default)]
     #[validate(length(max = 100))]
     pub search: Option<String>,
+    /// Sort order. Supported values: `id:asc`, `id:desc`, `title:asc`, `title:desc`.
+    #[serde(default)]
+    pub sort: Option<String>,
 }
 
 impl Default for GetAllToDoItemsQueryRequest {
@@ -68,32 +71,66 @@ impl Default for GetAllToDoItemsQueryRequest {
             page: default_page(),
             page_size: default_page_size(),
             search: None,
+            sort: None,
         }
     }
 }
 
 impl GetAllToDoItemsQueryRequest {
-    pub fn offset(&self) -> usize {
-        ((self.page - 1) * self.page_size) as usize
-    }
-
-    pub fn limit(&self) -> usize {
-        self.page_size as usize
-    }
-
     pub fn normalized_search(&self) -> Option<String> {
-        self.search
-            .as_ref()
-            .map(|value| value.trim().to_ascii_lowercase())
+        self.search.as_ref().map(|value| value.trim().to_string())
     }
 
-    pub fn validate_search(&self) -> Result<(), HttpError> {
+    pub fn validate_search(&self) -> Result<(), String> {
         if let Some(value) = self.search.as_ref() {
-            validate_not_blank(value).map_err(|err| HttpError::bad_request(err.to_string()))?;
+            validate_not_blank(value).map_err(|err| err.to_string())?;
         }
 
         Ok(())
     }
+
+    pub fn validate_sort(&self) -> Result<(), String> {
+        if let Some(value) = self.sort.as_ref() {
+            validate_not_blank(value).map_err(|err| err.to_string())?;
+            parse_sort(value)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn to_query(&self) -> Result<GetAllToDoItemsQuery, String> {
+        Ok(GetAllToDoItemsQuery::new(
+            self.page,
+            self.page_size,
+            self.normalized_search(),
+            self.sort
+                .as_deref()
+                .map(parse_sort)
+                .transpose()?
+                .unwrap_or_default(),
+        ))
+    }
+}
+
+fn parse_sort(value: &str) -> Result<ToDoItemSort, String> {
+    let normalized = value.trim().to_ascii_lowercase();
+    let (field, direction) = normalized
+        .split_once(':')
+        .ok_or_else(|| "sort must use the format field:direction".to_string())?;
+
+    let field = match field {
+        "id" => ToDoItemSortField::Id,
+        "title" => ToDoItemSortField::Title,
+        _ => return Err("sort field must be one of: id, title".to_string()),
+    };
+
+    let direction = match direction {
+        "asc" => SortDirection::Asc,
+        "desc" => SortDirection::Desc,
+        _ => return Err("sort direction must be one of: asc, desc".to_string()),
+    };
+
+    Ok(ToDoItemSort { field, direction })
 }
 
 #[cfg(test)]
@@ -126,8 +163,9 @@ mod tests {
 
         assert_eq!(query.page, DEFAULT_PAGE);
         assert_eq!(query.page_size, DEFAULT_PAGE_SIZE);
-        assert_eq!(query.offset(), 0);
-        assert_eq!(query.limit(), DEFAULT_PAGE_SIZE as usize);
+        let mapped = query.to_query().expect("defaults should map");
+        assert_eq!(mapped.page, DEFAULT_PAGE);
+        assert_eq!(mapped.page_size, DEFAULT_PAGE_SIZE);
     }
 
     #[test]
@@ -136,8 +174,21 @@ mod tests {
             page: 1,
             page_size: 20,
             search: Some("   ".into()),
+            sort: None,
         };
 
         assert!(query.validate_search().is_err());
+    }
+
+    #[test]
+    fn query_request_rejects_invalid_sort() {
+        let query = GetAllToDoItemsQueryRequest {
+            page: 1,
+            page_size: 20,
+            search: None,
+            sort: Some("status:asc".into()),
+        };
+
+        assert!(query.validate_sort().is_err());
     }
 }
