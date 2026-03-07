@@ -7,6 +7,10 @@ use utoipa::OpenApi;
 
 #[derive(OpenApi)]
 #[openapi(
+    info(
+        title = "Rust Microservice Template API",
+        version = "v1"
+    ),
     tags(
             (name = "todo", description = "Todo management endpoints.")
     ),

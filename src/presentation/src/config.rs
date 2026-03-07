@@ -10,18 +10,21 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.app_data(json_config());
     cfg.app_data(query_config());
     cfg.service(
-        web::scope("/to-do-items")
-            .service(api::get_all)
-            .service(api::create)
-            .service(api::get_by_id)
-            .service(api::update)
-            .service(api::delete),
-    );
-    cfg.service(
-        web::scope("/healthz")
-            .service(api::startup)
-            .service(api::ready)
-            .service(api::live),
+        web::scope("/api/v1")
+            .service(
+                web::scope("/to-do-items")
+                    .service(api::get_all)
+                    .service(api::create)
+                    .service(api::get_by_id)
+                    .service(api::update)
+                    .service(api::delete),
+            )
+            .service(
+                web::scope("/healthz")
+                    .service(api::startup)
+                    .service(api::ready)
+                    .service(api::live),
+            ),
     );
 }
 

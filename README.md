@@ -53,7 +53,7 @@ cd rust-microservice-template/deployment/docker
    - `docker-compose-infrastructure.sh`
 4. Verify that the microservice is running correctly by visiting the endpoint in your web browser or using a tool like curl:
 ```bash
-curl -v  http://localhost:8181/to-do-items
+curl -v  http://localhost:8181/api/v1/to-do-items
 ```
 
 ## Architecture
@@ -88,7 +88,7 @@ The API validates request bodies and query parameters before they reach the appl
 
 #### Create and update requests
 
-`POST /to-do-items` and `PUT /to-do-items/{id}` enforce these rules:
+`POST /api/v1/to-do-items` and `PUT /api/v1/to-do-items/{id}` enforce these rules:
 
 - `title` is required, must not be blank, and must be at most 120 characters
 - `note` is required, must not be blank, and must be at most 1000 characters
@@ -97,7 +97,7 @@ The API validates request bodies and query parameters before they reach the appl
 Example valid create request:
 
 ```bash
-curl -X POST http://localhost:8181/to-do-items \
+curl -X POST http://localhost:8181/api/v1/to-do-items \
   -H "Content-Type: application/json" \
   -d "{\"title\":\"Buy milk\",\"note\":\"2 liters\"}"
 ```
@@ -105,7 +105,7 @@ curl -X POST http://localhost:8181/to-do-items \
 Example invalid create request:
 
 ```bash
-curl -X POST http://localhost:8181/to-do-items \
+curl -X POST http://localhost:8181/api/v1/to-do-items \
   -H "Content-Type: application/json" \
   -d "{\"title\":\"   \",\"note\":\"2 liters\"}"
 ```
@@ -114,7 +114,7 @@ Invalid payloads return `400 Bad Request` with a problem-details JSON response.
 
 #### List query parameters
 
-`GET /to-do-items` supports optional validated query parameters:
+`GET /api/v1/to-do-items` supports optional validated query parameters:
 
 - `page`: one-based page number, default `1`
 - `page_size`: number of items per page, default `20`, maximum `100`
@@ -124,14 +124,14 @@ Invalid payloads return `400 Bad Request` with a problem-details JSON response.
 Example:
 
 ```bash
-curl "http://localhost:8181/to-do-items?page=1&page_size=10&search=milk&sort=title:asc"
+curl "http://localhost:8181/api/v1/to-do-items?page=1&page_size=10&search=milk&sort=title:asc"
 ```
 
 Invalid query parameters also return `400 Bad Request`.
 
 #### List response shape
 
-`GET /to-do-items` returns a paginated payload:
+`GET /api/v1/to-do-items` returns a paginated payload:
 
 ```json
 {
@@ -175,8 +175,20 @@ export MICROSERVICE__DATABASE__DATABASE_URL="postgres://postgres:postgres@localh
 ### OpenAPI and Error Handling
 
 The template includes OpenAPI generation through `utoipa` and Swagger UI integration for API discovery.
+Swagger UI is available at `GET /api/v1/swagger-ui/` and OpenAPI JSON at `GET /api/v1/api-docs/openapi.json`.
 
 Validation and request parsing errors are returned as problem-details responses, giving clients a structured `400 Bad Request` payload instead of ad hoc text errors.
+
+### API Versioning Strategy
+
+The API is explicitly versioned under `/api/v1`.
+All current endpoints, including health checks, live under this prefix, for example:
+
+- `GET /api/v1/to-do-items`
+- `POST /api/v1/to-do-items`
+- `GET /api/v1/healthz/ready`
+
+Future breaking API changes should be introduced under a new version prefix (for example `/api/v2`) while keeping previous versions available during migration windows.
 
 ## Deployment
 

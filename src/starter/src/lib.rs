@@ -41,7 +41,8 @@ async fn run_internal(settings: &Settings) -> Result<Server> {
             .map(|app| app.wrap(Logger::default()))
             .map(|app| app.configure(presentation::configure))
             .openapi_service(|api| {
-                SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", api)
+                SwaggerUi::new("/api/v1/swagger-ui/{_:.*}")
+                    .url("/api/v1/api-docs/openapi.json", api)
             })
             .app_data(web::Data::new(pool.clone()))
             .app_data(web::Data::new(todo_service.clone()))
