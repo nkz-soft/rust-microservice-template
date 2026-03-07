@@ -18,7 +18,7 @@ const TODO: &str = "todo";
 
 /// Retrieves a list of all to-do items.
 #[utoipa::path(
-    context_path = "/to-do-items",
+    context_path = "/api/v1/to-do-items",
     tag = TODO,
     responses(
         (status = 200, description = "List current todo items", body = ToDoItemsPageResponse),
@@ -43,7 +43,7 @@ pub async fn get_all(
 
 /// Retrieves a to-do item by Id.
 #[utoipa::path(
-    context_path = "/to-do-items",
+    context_path = "/api/v1/to-do-items",
     tag = TODO,
     responses(
         (status = 200, description = "Get todo item by id", body = ToDoItemResponse)
@@ -69,7 +69,7 @@ pub async fn get_by_id(
 
 /// Creates a new to-do item.
 #[utoipa::path(
-    context_path = "/to-do-items",
+    context_path = "/api/v1/to-do-items",
     tag = TODO,
     responses(
         (status = 201, description = "Create todo item", body = Uuid),
@@ -95,7 +95,7 @@ pub async fn create(
 
 /// Updates a to-do item by Id.
 #[utoipa::path(
-    context_path = "/to-do-items",
+    context_path = "/api/v1/to-do-items",
     tag = TODO,
     responses(
         (status = 200, description = "Update todo item"),
@@ -128,7 +128,7 @@ pub async fn update(
 
 /// Deletes a to-do item by Id.
 #[utoipa::path(
-    context_path = "/to-do-items",
+    context_path = "/api/v1/to-do-items",
     tag = TODO,
     responses(
         (status = 200, description = "Delete todo item")

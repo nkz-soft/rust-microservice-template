@@ -13,7 +13,7 @@ mod tests {
 
     use crate::{prepare_test_environment, utils::test_server::TEST_SERVER_ONCE};
 
-    const WEB_SERVER_PATH: &str = "http://localhost:8181/";
+    const WEB_SERVER_PATH: &str = "http://localhost:8181/api/v1/";
 
     //see https://stackoverflow.com/questions/78969766/how-can-i-call-drop-in-a-tokio-static-oncelock-in-rust
     #[dtor]
