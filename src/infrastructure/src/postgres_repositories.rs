@@ -1,4 +1,4 @@
-use crate::errors::Error::ItemNotFound;
+use crate::errors::Error::{ItemNotFound, VersionConflict};
 use crate::DbPool;
 use actix_web::web::Data;
 use anyhow::{anyhow, Context, Result};
@@ -12,7 +12,9 @@ use diesel::prelude::BoolExpressionMethods;
 use diesel::ExpressionMethods;
 use diesel::PgTextExpressionMethods;
 use diesel::{OptionalExtension, PgConnection, QueryDsl, RunQueryDsl};
-use domain::to_do_items::dsl::{id, note, title, to_do_items};
+use domain::to_do_items::dsl::{
+    id as item_id, note as item_note, title as item_title, to_do_items, version as item_version,
+};
 use domain::ToDoItem;
 use tokio::task;
 use uuid::Uuid;
@@ -70,33 +72,64 @@ impl ToDoItemRepository for PostgresToDoItemRepository {
         .await
     }
 
-    async fn get_by_id(&self, item_id: Uuid) -> anyhow::Result<ToDoItem> {
+    async fn get_by_id(&self, todo_item_id: Uuid) -> anyhow::Result<ToDoItem> {
         self.run_db(move |connection| {
             to_do_items
-                .filter(id.eq(&item_id))
+                .filter(item_id.eq(&todo_item_id))
                 .first::<ToDoItem>(connection)
                 .optional()?
-                .ok_or(anyhow!(ItemNotFound { id: item_id }))
+                .ok_or(anyhow!(ItemNotFound { id: todo_item_id }))
         })
         .await
     }
 
-    async fn save(&self, entity: ToDoItem) -> anyhow::Result<Uuid> {
+    async fn create(&self, entity: ToDoItem) -> anyhow::Result<Uuid> {
         self.run_db(move |connection| {
             diesel::insert_into(to_do_items)
                 .values(&entity)
-                .on_conflict(id)
-                .do_update()
-                .set(&entity)
                 .execute(connection)?;
             Ok(entity.id)
         })
         .await
     }
 
-    async fn delete(&self, item_id: Uuid) -> anyhow::Result<()> {
+    async fn update(&self, entity: ToDoItem) -> anyhow::Result<Uuid> {
         self.run_db(move |connection| {
-            diesel::delete(to_do_items.filter(id.eq(&item_id))).execute(connection)?;
+            let affected_rows = diesel::update(
+                to_do_items.filter(item_id.eq(entity.id).and(item_version.eq(entity.version))),
+            )
+            .set((
+                item_title.eq(entity.title.clone()),
+                item_note.eq(entity.note.clone()),
+                item_version.eq(entity.version + 1),
+            ))
+            .execute(connection)?;
+
+            if affected_rows == 1 {
+                return Ok(entity.id);
+            }
+
+            let actual_version = to_do_items
+                .filter(item_id.eq(entity.id))
+                .select(item_version)
+                .first::<i32>(connection)
+                .optional()?;
+
+            match actual_version {
+                Some(actual_version) => Err(anyhow!(VersionConflict {
+                    id: entity.id,
+                    expected_version: entity.version,
+                    actual_version,
+                })),
+                None => Err(anyhow!(ItemNotFound { id: entity.id })),
+            }
+        })
+        .await
+    }
+
+    async fn delete(&self, todo_item_id: Uuid) -> anyhow::Result<()> {
+        self.run_db(move |connection| {
+            diesel::delete(to_do_items.filter(item_id.eq(&todo_item_id))).execute(connection)?;
             Ok(())
         })
         .await
@@ -108,7 +141,11 @@ fn build_filtered_query<'a>(search: Option<&str>) -> domain::to_do_items::BoxedQ
 
     if let Some(search) = search {
         let pattern = format!("%{}%", search.trim());
-        query = query.filter(title.ilike(pattern.clone()).or(note.ilike(pattern)));
+        query = query.filter(
+            item_title
+                .ilike(pattern.clone())
+                .or(item_note.ilike(pattern)),
+        );
     }
 
     query
@@ -119,9 +156,13 @@ fn apply_sort<'a>(
     params: &GetAllToDoItemsQuery,
 ) -> domain::to_do_items::BoxedQuery<'a, Pg> {
     match (&params.sort.field, &params.sort.direction) {
-        (ToDoItemSortField::Id, SortDirection::Asc) => query.order(id.asc()),
-        (ToDoItemSortField::Id, SortDirection::Desc) => query.order(id.desc()),
-        (ToDoItemSortField::Title, SortDirection::Asc) => query.order((title.asc(), id.asc())),
-        (ToDoItemSortField::Title, SortDirection::Desc) => query.order((title.desc(), id.desc())),
+        (ToDoItemSortField::Id, SortDirection::Asc) => query.order(item_id.asc()),
+        (ToDoItemSortField::Id, SortDirection::Desc) => query.order(item_id.desc()),
+        (ToDoItemSortField::Title, SortDirection::Asc) => {
+            query.order((item_title.asc(), item_id.asc()))
+        }
+        (ToDoItemSortField::Title, SortDirection::Desc) => {
+            query.order((item_title.desc(), item_id.desc()))
+        }
     }
 }

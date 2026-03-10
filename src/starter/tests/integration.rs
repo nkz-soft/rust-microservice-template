@@ -98,6 +98,7 @@ mod tests {
 
         // Assert
         assert!(response.status().is_success());
+        assert!(response.headers().get("etag").is_some());
     }
 
     #[serial]
@@ -139,12 +140,30 @@ mod tests {
             .await
             .expect("Failed to deserialize response.");
 
+        let item_response = client
+            .get(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}", id = id).as_str())
+            .send()
+            .await
+            .expect("Failed to execute request.");
+        let etag = item_response
+            .headers()
+            .get("etag")
+            .expect("ETag header must be present")
+            .to_str()
+            .expect("ETag must be ascii")
+            .to_string();
+        let _item = item_response
+            .json::<Value>()
+            .await
+            .expect("Failed to deserialize response.");
+
         let mut map_update = HashMap::new();
         map_update.insert("title", String::from("title1"));
         map_update.insert("note", String::from("note1"));
 
         let response = client
             .put(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}", id = id).as_str())
+            .header("If-Match", etag)
             .json(&map_update)
             .send()
             .await
@@ -152,6 +171,13 @@ mod tests {
 
         // Assert
         assert!(response.status().is_success());
+        assert_eq!(
+            response
+                .headers()
+                .get("etag")
+                .expect("ETag header must be present"),
+            "\"2\""
+        );
     }
 
     #[serial]
@@ -221,6 +247,7 @@ mod tests {
 
         let response = client
             .put(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}", id = id).as_str())
+            .header("If-Match", "\"1\"")
             .json(&json!({
                 "title": "title1",
                 "note": "   "
@@ -230,6 +257,70 @@ mod tests {
             .expect("Failed to execute request.");
 
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_update_rejects_stale_version() {
+        let client = prepare_test_environment!();
+        let mut map_create = HashMap::new();
+        map_create.insert("title", "title1");
+        map_create.insert("note", "note1");
+
+        let id = client
+            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
+            .json(&map_create)
+            .send()
+            .await
+            .expect("Failed to execute request.")
+            .json::<Uuid>()
+            .await
+            .expect("Failed to deserialize response.");
+
+        let item_response = client
+            .get(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}", id = id).as_str())
+            .send()
+            .await
+            .expect("Failed to execute request.");
+        let etag = item_response
+            .headers()
+            .get("etag")
+            .expect("ETag header must be present")
+            .to_str()
+            .expect("ETag must be ascii")
+            .to_string();
+
+        let response = client
+            .put(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}", id = id).as_str())
+            .header("If-Match", etag.clone())
+            .json(&json!({
+                "title": "title2",
+                "note": "note2"
+            }))
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let stale_response = client
+            .put(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}", id = id).as_str())
+            .header("If-Match", etag)
+            .json(&json!({
+                "title": "title3",
+                "note": "note3"
+            }))
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        assert_eq!(stale_response.status(), StatusCode::PRECONDITION_FAILED);
+
+        let body = stale_response
+            .json::<Value>()
+            .await
+            .expect("Failed to deserialize response.");
+        assert_eq!(body["status"], json!(412));
     }
 
     #[serial]

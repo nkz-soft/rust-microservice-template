@@ -66,18 +66,35 @@ mod tests {
                 .ok_or_else(|| anyhow::anyhow!("Item not found"))
         }
 
-        async fn save(&self, entity: ToDoItem) -> anyhow::Result<Uuid> {
+        async fn create(&self, entity: ToDoItem) -> anyhow::Result<Uuid> {
             *self.operation_count.lock().unwrap() += 1;
             sleep(Duration::from_millis(10)).await; // Simulate some work
             let id = entity.id;
 
             let mut items = self.items.lock().unwrap();
-            // Update existing or add new
-            if let Some(pos) = items.iter().position(|item| item.id == id) {
-                items[pos] = entity;
-            } else {
-                items.push(entity);
+            items.push(entity);
+            Ok(id)
+        }
+
+        async fn update(&self, entity: ToDoItem) -> anyhow::Result<Uuid> {
+            *self.operation_count.lock().unwrap() += 1;
+            sleep(Duration::from_millis(10)).await; // Simulate some work
+            let id = entity.id;
+
+            let mut items = self.items.lock().unwrap();
+            let existing = items
+                .iter_mut()
+                .find(|item| item.id == id)
+                .ok_or_else(|| anyhow::anyhow!("Item not found"))?;
+
+            if existing.version != entity.version {
+                return Err(anyhow::anyhow!("Version conflict"));
             }
+
+            existing.title = entity.title;
+            existing.note = entity.note;
+            existing.version += 1;
+
             Ok(id)
         }
 

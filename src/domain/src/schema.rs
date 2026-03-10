@@ -8,5 +8,6 @@ table! {
         title -> Nullable<Varchar>,
         #[max_length = 255]
         note -> Nullable<Varchar>,
+        version -> Int4,
     }
 }

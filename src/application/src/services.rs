@@ -142,10 +142,30 @@ mod tests {
                 .ok_or_else(|| anyhow::anyhow!("Item not found"))
         }
 
-        async fn save(&self, entity: ToDoItem) -> anyhow::Result<Uuid> {
+        async fn create(&self, entity: ToDoItem) -> anyhow::Result<Uuid> {
             *self.call_count.lock().unwrap() += 1;
             let id = entity.id;
             self.items.lock().unwrap().push(entity);
+            Ok(id)
+        }
+
+        async fn update(&self, entity: ToDoItem) -> anyhow::Result<Uuid> {
+            *self.call_count.lock().unwrap() += 1;
+            let id = entity.id;
+            let mut items = self.items.lock().unwrap();
+            let existing = items
+                .iter_mut()
+                .find(|item| item.id == id)
+                .ok_or_else(|| anyhow::anyhow!("Item not found"))?;
+
+            if existing.version != entity.version {
+                return Err(anyhow::anyhow!("Version conflict"));
+            }
+
+            existing.title = entity.title;
+            existing.note = entity.note;
+            existing.version += 1;
+
             Ok(id)
         }
 

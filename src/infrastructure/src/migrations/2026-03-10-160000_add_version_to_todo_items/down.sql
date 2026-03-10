@@ -1,0 +1,2 @@
+ALTER TABLE to_do_items
+DROP COLUMN IF EXISTS version;
