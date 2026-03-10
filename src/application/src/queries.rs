@@ -120,14 +120,16 @@ pub struct UpdateToDoItemQuery {
     pub id: Uuid,
     pub title: String,
     pub note: String,
+    pub version: i32,
 }
 
 impl UpdateToDoItemQuery {
-    pub fn new(id: Uuid, title: &String, note: &String) -> Self {
+    pub fn new(id: Uuid, title: &String, note: &String, version: i32) -> Self {
         UpdateToDoItemQuery {
             id,
             title: title.into(),
             note: note.into(),
+            version,
         }
     }
 }

@@ -29,6 +29,22 @@ impl HttpError {
                 .with_detail(detail.into()),
         )
     }
+
+    pub fn precondition_failed(detail: impl Into<String>) -> Self {
+        HttpError::Problem(
+            ProblemDetails::new()
+                .with_status(HttpStatusCode::PRECONDITION_FAILED)
+                .with_detail(detail.into()),
+        )
+    }
+
+    pub fn precondition_required(detail: impl Into<String>) -> Self {
+        HttpError::Problem(
+            ProblemDetails::new()
+                .with_status(HttpStatusCode::PRECONDITION_REQUIRED)
+                .with_detail(detail.into()),
+        )
+    }
 }
 
 impl Display for HttpError {
@@ -80,6 +96,9 @@ impl From<anyhow::Error> for HttpError {
                         .with_status(HttpStatusCode::NOT_FOUND)
                         .with_detail(err.to_string()),
                 ),
+                errors::Error::VersionConflict { .. } => {
+                    HttpError::precondition_failed(err.to_string())
+                }
                 _ => HttpError::internal_server_error(err.to_string()),
             }
         } else {

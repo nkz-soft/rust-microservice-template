@@ -1,3 +1,4 @@
+use actix_web::http::header::{ETAG, IF_MATCH};
 use actix_web::web::Data;
 use actix_web::{delete, post, put};
 use actix_web::{get, web, HttpResponse, Result};
@@ -58,13 +59,13 @@ pub async fn get_by_id(
     id: web::Path<Uuid>,
 ) -> Result<HttpResponse, HttpError> {
     let handler = service.get_handler();
-    let data = ToDoItemResponse::from(
-        handler
-            .execute(GetToDoItemQuery::new(Some(id.into_inner())))
-            .await?,
-    );
+    let item = handler
+        .execute(GetToDoItemQuery::new(Some(id.into_inner())))
+        .await?;
+    let etag = format_etag(item.version);
+    let data = ToDoItemResponse::from(item);
 
-    Ok(HttpResponse::Ok().json(data))
+    Ok(HttpResponse::Ok().insert_header((ETAG, etag)).json(data))
 }
 
 /// Creates a new to-do item.
@@ -99,7 +100,9 @@ pub async fn create(
     tag = TODO,
     responses(
         (status = 200, description = "Update todo item"),
-        (status = 400, description = "Validation error", body = ProblemDetailsResponse)
+        (status = 400, description = "Validation error", body = ProblemDetailsResponse),
+        (status = 412, description = "Stale If-Match precondition", body = ProblemDetailsResponse),
+        (status = 428, description = "Missing If-Match precondition", body = ProblemDetailsResponse)
     ),
     params(
         ("id", description = "Id of the to-do item to update")
@@ -110,20 +113,25 @@ pub async fn create(
 pub async fn update(
     service: Data<ToDoItemService>,
     id: web::Path<Uuid>,
+    request: actix_web::HttpRequest,
     item: web::Json<UpdateToDoItemRequest>,
 ) -> Result<HttpResponse, HttpError> {
     item.validate()?;
     let handler = service.update_handler();
+    let version = parse_if_match(&request)?;
 
     handler
         .execute(UpdateToDoItemQuery::new(
             id.into_inner(),
             &item.title,
             &item.note,
+            version,
         ))
         .await?;
 
-    Ok(HttpResponse::from(HttpResponse::Ok()))
+    Ok(HttpResponse::Ok()
+        .insert_header((ETAG, format_etag(version + 1)))
+        .finish())
 }
 
 /// Deletes a to-do item by Id.
@@ -149,4 +157,34 @@ pub async fn delete(
         .await?;
 
     Ok(HttpResponse::from(HttpResponse::Ok()))
+}
+
+fn format_etag(version: i32) -> String {
+    format!("\"{version}\"")
+}
+
+fn parse_if_match(request: &actix_web::HttpRequest) -> Result<i32, HttpError> {
+    let raw = request
+        .headers()
+        .get(IF_MATCH)
+        .ok_or_else(|| HttpError::precondition_required("missing If-Match header"))?
+        .to_str()
+        .map_err(|_| HttpError::bad_request("If-Match header must be valid ASCII"))?;
+
+    let normalized = raw.trim();
+    if normalized == "*" {
+        return Err(HttpError::bad_request(
+            "If-Match '*' is not supported for optimistic locking",
+        ));
+    }
+
+    let normalized = normalized
+        .strip_prefix("W/")
+        .unwrap_or(normalized)
+        .trim()
+        .trim_matches('"');
+
+    normalized
+        .parse::<i32>()
+        .map_err(|_| HttpError::bad_request("If-Match header must contain an integer ETag"))
 }

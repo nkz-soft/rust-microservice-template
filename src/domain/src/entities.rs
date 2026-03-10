@@ -11,6 +11,7 @@ pub struct ToDoItem {
     pub id: Uuid,
     pub title: Option<String>,
     pub note: Option<String>,
+    pub version: i32,
 }
 
 impl ToDoItem {
@@ -19,14 +20,20 @@ impl ToDoItem {
             id: Uuid::new_v4(),
             title: Some(title),
             note: Some(note),
+            version: 1,
         }
     }
 
     pub fn new_id(id: Uuid, title: String, note: String) -> Self {
+        Self::new_versioned(id, title, note, 1)
+    }
+
+    pub fn new_versioned(id: Uuid, title: String, note: String, version: i32) -> Self {
         Self {
             id,
             title: Some(title),
             note: Some(note),
+            version,
         }
     }
 }
