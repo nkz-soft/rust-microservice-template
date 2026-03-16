@@ -16,6 +16,7 @@ dotenv.workspace = true
 utoipa.workspace = true
 utoipa-actix-web.workspace = true
 utoipa-swagger-ui.workspace = true
+chrono.workspace = true
 
 application = { path = "../application" }
 presentation = { path = "../presentation" }

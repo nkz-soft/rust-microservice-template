@@ -13,6 +13,7 @@ tokio-postgres.workspace = true
 uuid.workspace = true
 anyhow.workspace = true
 config.workspace = true
+chrono.workspace = true
 
 domain = { path = "../domain" }
 

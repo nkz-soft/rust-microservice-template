@@ -18,6 +18,7 @@ http.workspace = true
 diesel.workspace = true
 tokio.workspace = true
 validator.workspace = true
+chrono.workspace = true
 
 application = { path = "../application" }
 infrastructure = { path = "../infrastructure" }

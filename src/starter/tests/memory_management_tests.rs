@@ -204,6 +204,8 @@ mod tests {
                         let query = application::CreateToDoItemQuery::new(
                             &format!("Task {}", i),
                             &format!("Note {}", i),
+                            "pending",
+                            None,
                         );
                         handler.execute(query).await.map(|_| 1)
                     }

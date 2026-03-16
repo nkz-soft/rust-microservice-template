@@ -1,6 +1,11 @@
-use application::{GetAllToDoItemsQuery, SortDirection, ToDoItemSort, ToDoItemSortField};
+use application::{
+    CreateToDoItemQuery, GetAllToDoItemsQuery, SortDirection, ToDoItemSort, ToDoItemSortField,
+    UpdateToDoItemQuery,
+};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
+use uuid::Uuid;
 use validator::{Validate, ValidationError};
 
 const DEFAULT_PAGE: u32 = 1;
@@ -22,6 +27,17 @@ fn default_page_size() -> u32 {
     DEFAULT_PAGE_SIZE
 }
 
+fn default_status() -> String {
+    "pending".into()
+}
+
+fn validate_status(value: &str) -> Result<(), ValidationError> {
+    match value.trim().to_ascii_lowercase().as_str() {
+        "pending" | "in_progress" | "done" => Ok(()),
+        _ => Err(ValidationError::new("invalid_status")),
+    }
+}
+
 #[readonly::make]
 #[derive(Deserialize, Serialize, ToSchema, Validate)]
 pub struct CreateToDoItemRequest {
@@ -31,6 +47,12 @@ pub struct CreateToDoItemRequest {
     /// The note of the to-do item
     #[validate(length(min = 1, max = 1000), custom(function = "validate_not_blank"))]
     pub note: String,
+    /// Lifecycle status. Supported values: `pending`, `in_progress`, `done`.
+    #[serde(default = "default_status")]
+    #[validate(custom(function = "validate_status"))]
+    pub status: String,
+    /// Optional due date in RFC 3339 format.
+    pub due_at: Option<DateTime<Utc>>,
 }
 
 #[readonly::make]
@@ -42,6 +64,11 @@ pub struct UpdateToDoItemRequest {
     /// The note of the to-do item
     #[validate(length(min = 1, max = 1000), custom(function = "validate_not_blank"))]
     pub note: String,
+    /// Lifecycle status. Supported values: `pending`, `in_progress`, `done`.
+    #[validate(custom(function = "validate_status"))]
+    pub status: String,
+    /// Optional due date in RFC 3339 format.
+    pub due_at: Option<DateTime<Utc>>,
 }
 
 #[readonly::make]
@@ -112,6 +139,30 @@ impl GetAllToDoItemsQueryRequest {
     }
 }
 
+impl CreateToDoItemRequest {
+    pub fn to_query(&self) -> CreateToDoItemQuery {
+        CreateToDoItemQuery::new(
+            &self.title,
+            &self.note,
+            self.status.trim().to_ascii_lowercase(),
+            self.due_at,
+        )
+    }
+}
+
+impl UpdateToDoItemRequest {
+    pub fn to_query(&self, id: Uuid, version: i32) -> UpdateToDoItemQuery {
+        UpdateToDoItemQuery::new(
+            id,
+            &self.title,
+            &self.note,
+            self.status.trim().to_ascii_lowercase(),
+            self.due_at,
+            version,
+        )
+    }
+}
+
 fn parse_sort(value: &str) -> Result<ToDoItemSort, String> {
     let normalized = value.trim().to_ascii_lowercase();
     let (field, direction) = normalized
@@ -142,6 +193,8 @@ mod tests {
         let request = CreateToDoItemRequest {
             title: "   ".into(),
             note: "note".into(),
+            status: default_status(),
+            due_at: None,
         };
 
         assert!(request.validate().is_err());
@@ -152,6 +205,8 @@ mod tests {
         let request = UpdateToDoItemRequest {
             title: "title".into(),
             note: "   ".into(),
+            status: default_status(),
+            due_at: None,
         };
 
         assert!(request.validate().is_err());
@@ -190,5 +245,17 @@ mod tests {
         };
 
         assert!(query.validate_sort().is_err());
+    }
+
+    #[test]
+    fn create_request_rejects_invalid_status() {
+        let request = CreateToDoItemRequest {
+            title: "title".into(),
+            note: "note".into(),
+            status: "archived".into(),
+            due_at: None,
+        };
+
+        assert!(request.validate().is_err());
     }
 }

@@ -3,6 +3,7 @@ mod utils;
 #[cfg(test)]
 mod tests {
     use crate::utils::test_server;
+    use chrono::DateTime;
     use ctor::dtor;
     use reqwest::StatusCode;
     use serde_json::json;
@@ -15,10 +16,8 @@ mod tests {
 
     const WEB_SERVER_PATH: &str = "http://localhost:8181/api/v1/";
 
-    //see https://stackoverflow.com/questions/78969766/how-can-i-call-drop-in-a-tokio-static-oncelock-in-rust
     #[dtor]
     fn cleanup() {
-        //This is crazy but it works
         let id = TEST_SERVER_ONCE.get().unwrap().container().id();
 
         std::process::Command::new("docker")
@@ -40,14 +39,12 @@ mod tests {
     async fn test_get_all() {
         let client = prepare_test_environment!();
 
-        // Act
         let response = client
             .get(WEB_SERVER_PATH.to_owned() + "to-do-items")
             .send()
             .await
             .expect("Failed to execute request.");
 
-        // Assert
         assert!(response.status().is_success());
         let body = response
             .json::<Value>()
@@ -78,8 +75,8 @@ mod tests {
         let mut map_create = HashMap::new();
         map_create.insert("title", "title1");
         map_create.insert("note", "note1");
+        map_create.insert("status", "pending");
 
-        // Act
         let id = client
             .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
             .json(&map_create)
@@ -91,14 +88,22 @@ mod tests {
             .expect("Failed to deserialize response.");
 
         let response = client
-            .get(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}", id = id).as_str())
+            .get(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
             .send()
             .await
             .expect("Failed to execute request.");
 
-        // Assert
         assert!(response.status().is_success());
         assert!(response.headers().get("etag").is_some());
+
+        let body = response
+            .json::<Value>()
+            .await
+            .expect("Failed to deserialize response.");
+        assert_eq!(body["status"], "pending");
+        assert!(body["created_at"].is_string());
+        assert!(body["updated_at"].is_string());
+        assert!(body["due_at"].is_null());
     }
 
     #[serial]
@@ -108,8 +113,8 @@ mod tests {
         let mut map = HashMap::new();
         map.insert("title", "title1");
         map.insert("note", "note1");
+        map.insert("status", "pending");
 
-        // Act
         let response = client
             .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
             .json(&map)
@@ -117,8 +122,50 @@ mod tests {
             .await
             .expect("Failed to execute request.");
 
-        // Assert
         assert!(response.status().is_success());
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_create_populates_lifecycle_metadata() {
+        let client = prepare_test_environment!();
+
+        let id = client
+            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
+            .json(&json!({
+                "title": "title1",
+                "note": "note1"
+            }))
+            .send()
+            .await
+            .expect("Failed to execute request.")
+            .json::<Uuid>()
+            .await
+            .expect("Failed to deserialize response.");
+
+        let response = client
+            .get(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        let body = response
+            .json::<Value>()
+            .await
+            .expect("Failed to deserialize response.");
+
+        assert_eq!(body["status"], "pending");
+        let created_at = body["created_at"]
+            .as_str()
+            .expect("created_at should be present");
+        let updated_at = body["updated_at"]
+            .as_str()
+            .expect("updated_at should be present");
+
+        assert!(DateTime::parse_from_rfc3339(created_at).is_ok());
+        assert!(DateTime::parse_from_rfc3339(updated_at).is_ok());
+        assert_eq!(created_at, updated_at);
+        assert!(body["due_at"].is_null());
     }
 
     #[serial]
@@ -128,8 +175,8 @@ mod tests {
         let mut map_create = HashMap::new();
         map_create.insert("title", "title1");
         map_create.insert("note", "note1");
+        map_create.insert("status", "pending");
 
-        // Act
         let id = client
             .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
             .json(&map_create)
@@ -141,7 +188,7 @@ mod tests {
             .expect("Failed to deserialize response.");
 
         let item_response = client
-            .get(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}", id = id).as_str())
+            .get(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
             .send()
             .await
             .expect("Failed to execute request.");
@@ -152,24 +199,29 @@ mod tests {
             .to_str()
             .expect("ETag must be ascii")
             .to_string();
-        let _item = item_response
+        let item = item_response
             .json::<Value>()
             .await
             .expect("Failed to deserialize response.");
+        let original_updated_at = item["updated_at"]
+            .as_str()
+            .expect("updated_at should be present")
+            .to_string();
 
-        let mut map_update = HashMap::new();
-        map_update.insert("title", String::from("title1"));
-        map_update.insert("note", String::from("note1"));
-
+        let due_at = "2030-01-15T12:00:00Z";
         let response = client
-            .put(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}", id = id).as_str())
+            .put(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
             .header("If-Match", etag)
-            .json(&map_update)
+            .json(&json!({
+                "title": "title1",
+                "note": "note1",
+                "status": "in_progress",
+                "due_at": due_at
+            }))
             .send()
             .await
             .expect("Failed to execute request.");
 
-        // Assert
         assert!(response.status().is_success());
         assert_eq!(
             response
@@ -177,6 +229,24 @@ mod tests {
                 .get("etag")
                 .expect("ETag header must be present"),
             "\"2\""
+        );
+
+        let updated_item = client
+            .get(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
+            .send()
+            .await
+            .expect("Failed to execute request.")
+            .json::<Value>()
+            .await
+            .expect("Failed to deserialize response.");
+
+        assert_eq!(updated_item["status"], "in_progress");
+        assert_eq!(updated_item["due_at"], due_at);
+        assert_ne!(
+            updated_item["updated_at"]
+                .as_str()
+                .expect("updated_at should be present"),
+            original_updated_at
         );
     }
 
@@ -187,8 +257,8 @@ mod tests {
         let mut map_create = HashMap::new();
         map_create.insert("title", "title1");
         map_create.insert("note", "note1");
+        map_create.insert("status", "pending");
 
-        // Act
         let id = client
             .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
             .json(&map_create)
@@ -200,12 +270,11 @@ mod tests {
             .expect("Failed to deserialize response.");
 
         let response = client
-            .delete(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}", id = id).as_str())
+            .delete(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
             .send()
             .await
             .expect("Failed to execute request.");
 
-        // Assert
         assert!(response.status().is_success());
     }
 
@@ -218,7 +287,8 @@ mod tests {
             .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
             .json(&json!({
                 "title": "   ",
-                "note": "note1"
+                "note": "note1",
+                "status": "pending"
             }))
             .send()
             .await
@@ -234,6 +304,7 @@ mod tests {
         let mut map_create = HashMap::new();
         map_create.insert("title", "title1");
         map_create.insert("note", "note1");
+        map_create.insert("status", "pending");
 
         let id = client
             .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
@@ -246,11 +317,12 @@ mod tests {
             .expect("Failed to deserialize response.");
 
         let response = client
-            .put(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}", id = id).as_str())
+            .put(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
             .header("If-Match", "\"1\"")
             .json(&json!({
                 "title": "title1",
-                "note": "   "
+                "note": "   ",
+                "status": "pending"
             }))
             .send()
             .await
@@ -266,6 +338,7 @@ mod tests {
         let mut map_create = HashMap::new();
         map_create.insert("title", "title1");
         map_create.insert("note", "note1");
+        map_create.insert("status", "pending");
 
         let id = client
             .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
@@ -278,7 +351,7 @@ mod tests {
             .expect("Failed to deserialize response.");
 
         let item_response = client
-            .get(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}", id = id).as_str())
+            .get(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
             .send()
             .await
             .expect("Failed to execute request.");
@@ -291,11 +364,12 @@ mod tests {
             .to_string();
 
         let response = client
-            .put(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}", id = id).as_str())
+            .put(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
             .header("If-Match", etag.clone())
             .json(&json!({
                 "title": "title2",
-                "note": "note2"
+                "note": "note2",
+                "status": "in_progress"
             }))
             .send()
             .await
@@ -304,11 +378,12 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
 
         let stale_response = client
-            .put(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}", id = id).as_str())
+            .put(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
             .header("If-Match", etag)
             .json(&json!({
                 "title": "title3",
-                "note": "note3"
+                "note": "note3",
+                "status": "done"
             }))
             .send()
             .await
@@ -366,7 +441,8 @@ mod tests {
         let client = prepare_test_environment!();
         let oversized_body = json!({
             "title": "a".repeat(9000),
-            "note": "note1"
+            "note": "note1",
+            "status": "pending"
         });
 
         let response = client

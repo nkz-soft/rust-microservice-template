@@ -2,12 +2,10 @@ use actix_web::http::header::{ETAG, IF_MATCH};
 use actix_web::web::Data;
 use actix_web::{delete, post, put};
 use actix_web::{get, web, HttpResponse, Result};
-use application::CreateToDoItemQuery;
 use application::DeleteToDoItemQuery;
 use application::GetAllToDoItemsQuery;
 use application::GetToDoItemQuery;
 use application::ToDoItemService;
-use application::UpdateToDoItemQuery;
 use uuid::Uuid;
 use validator::Validate;
 
@@ -85,11 +83,7 @@ pub async fn create(
 ) -> Result<HttpResponse, HttpError> {
     item.validate()?;
     let handler = service.create_handler();
-
-    // Fixed bug: was using &item.title for both title and note
-    let data = handler
-        .execute(CreateToDoItemQuery::new(&item.title, &item.note))
-        .await?;
+    let data = handler.execute(item.to_query()).await?;
 
     Ok(HttpResponse::Created().json(data))
 }
@@ -119,15 +113,9 @@ pub async fn update(
     item.validate()?;
     let handler = service.update_handler();
     let version = parse_if_match(&request)?;
+    let id = id.into_inner();
 
-    handler
-        .execute(UpdateToDoItemQuery::new(
-            id.into_inner(),
-            &item.title,
-            &item.note,
-            version,
-        ))
-        .await?;
+    handler.execute(item.to_query(id, version)).await?;
 
     Ok(HttpResponse::Ok()
         .insert_header((ETAG, format_etag(version + 1)))
