@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -105,13 +106,22 @@ impl GetToDoItemQuery {
 pub struct CreateToDoItemQuery {
     pub title: String,
     pub note: String,
+    pub status: String,
+    pub due_at: Option<DateTime<Utc>>,
 }
 
 impl CreateToDoItemQuery {
-    pub fn new(title: &String, note: &String) -> Self {
+    pub fn new(
+        title: &String,
+        note: &String,
+        status: impl Into<String>,
+        due_at: Option<DateTime<Utc>>,
+    ) -> Self {
         CreateToDoItemQuery {
             title: title.into(),
             note: note.into(),
+            status: status.into(),
+            due_at,
         }
     }
 }
@@ -120,15 +130,26 @@ pub struct UpdateToDoItemQuery {
     pub id: Uuid,
     pub title: String,
     pub note: String,
+    pub status: String,
+    pub due_at: Option<DateTime<Utc>>,
     pub version: i32,
 }
 
 impl UpdateToDoItemQuery {
-    pub fn new(id: Uuid, title: &String, note: &String, version: i32) -> Self {
+    pub fn new(
+        id: Uuid,
+        title: &String,
+        note: &String,
+        status: impl Into<String>,
+        due_at: Option<DateTime<Utc>>,
+        version: i32,
+    ) -> Self {
         UpdateToDoItemQuery {
             id,
             title: title.into(),
             note: note.into(),
+            status: status.into(),
+            due_at,
             version,
         }
     }

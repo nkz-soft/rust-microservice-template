@@ -164,6 +164,9 @@ mod tests {
 
             existing.title = entity.title;
             existing.note = entity.note;
+            existing.status = entity.status;
+            existing.due_at = entity.due_at;
+            existing.updated_at = chrono::Utc::now();
             existing.version += 1;
 
             Ok(id)

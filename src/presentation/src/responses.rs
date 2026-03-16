@@ -1,4 +1,5 @@
 use application::PaginatedResult;
+use chrono::{DateTime, Utc};
 use domain::ToDoItem;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -13,6 +14,14 @@ pub struct ToDoItemResponse {
     pub title: Option<String>,
     /// The note of the to-do item
     pub note: Option<String>,
+    /// Lifecycle status.
+    pub status: String,
+    /// Creation timestamp in UTC.
+    pub created_at: DateTime<Utc>,
+    /// Last update timestamp in UTC.
+    pub updated_at: DateTime<Utc>,
+    /// Optional due timestamp in UTC.
+    pub due_at: Option<DateTime<Utc>>,
 }
 
 impl From<ToDoItem> for ToDoItemResponse {
@@ -21,6 +30,10 @@ impl From<ToDoItem> for ToDoItemResponse {
             id: item.id,
             title: item.title,
             note: item.note,
+            status: item.status,
+            created_at: item.created_at,
+            updated_at: item.updated_at,
+            due_at: item.due_at,
         }
     }
 }

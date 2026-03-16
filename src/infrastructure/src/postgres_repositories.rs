@@ -6,14 +6,16 @@ use application::{
     GetAllToDoItemsQuery, PaginatedResult, SortDirection, ToDoItemRepository, ToDoItemSortField,
 };
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use diesel::dsl::count_star;
 use diesel::pg::Pg;
 use diesel::prelude::BoolExpressionMethods;
 use diesel::ExpressionMethods;
 use diesel::PgTextExpressionMethods;
-use diesel::{OptionalExtension, PgConnection, QueryDsl, RunQueryDsl};
+use diesel::{Insertable, OptionalExtension, PgConnection, QueryDsl, Queryable, RunQueryDsl};
 use domain::to_do_items::dsl::{
-    id as item_id, note as item_note, title as item_title, to_do_items, version as item_version,
+    due_at as item_due_at, id as item_id, note as item_note, status as item_status,
+    title as item_title, to_do_items, updated_at as item_updated_at, version as item_version,
 };
 use domain::ToDoItem;
 use tokio::task;
@@ -21,6 +23,61 @@ use uuid::Uuid;
 
 pub struct PostgresToDoItemRepository {
     pool: Data<DbPool>,
+}
+
+#[derive(Queryable)]
+struct DbToDoItem {
+    id: Uuid,
+    title: Option<String>,
+    note: Option<String>,
+    status: String,
+    created_at: DateTime<Utc>,
+    updated_at: DateTime<Utc>,
+    due_at: Option<DateTime<Utc>>,
+    version: i32,
+}
+
+#[derive(Insertable)]
+#[diesel(table_name = domain::to_do_items)]
+struct NewDbToDoItem {
+    id: Uuid,
+    title: Option<String>,
+    note: Option<String>,
+    status: String,
+    created_at: DateTime<Utc>,
+    updated_at: DateTime<Utc>,
+    due_at: Option<DateTime<Utc>>,
+    version: i32,
+}
+
+impl From<DbToDoItem> for ToDoItem {
+    fn from(item: DbToDoItem) -> Self {
+        ToDoItem {
+            id: item.id,
+            title: item.title,
+            note: item.note,
+            status: item.status,
+            created_at: item.created_at,
+            updated_at: item.updated_at,
+            due_at: item.due_at,
+            version: item.version,
+        }
+    }
+}
+
+impl From<&ToDoItem> for NewDbToDoItem {
+    fn from(item: &ToDoItem) -> Self {
+        Self {
+            id: item.id,
+            title: item.title.clone(),
+            note: item.note.clone(),
+            status: item.status.clone(),
+            created_at: item.created_at,
+            updated_at: item.updated_at,
+            due_at: item.due_at,
+            version: item.version,
+        }
+    }
 }
 
 impl PostgresToDoItemRepository {
@@ -60,7 +117,10 @@ impl ToDoItemRepository for PostgresToDoItemRepository {
             let items = apply_sort(build_filtered_query(query.search.as_deref()), &query)
                 .offset(query.offset())
                 .limit(query.limit())
-                .load(connection)?;
+                .load::<DbToDoItem>(connection)?
+                .into_iter()
+                .map(ToDoItem::from)
+                .collect();
 
             Ok(PaginatedResult::new(
                 items,
@@ -76,8 +136,9 @@ impl ToDoItemRepository for PostgresToDoItemRepository {
         self.run_db(move |connection| {
             to_do_items
                 .filter(item_id.eq(&todo_item_id))
-                .first::<ToDoItem>(connection)
+                .first::<DbToDoItem>(connection)
                 .optional()?
+                .map(ToDoItem::from)
                 .ok_or(anyhow!(ItemNotFound { id: todo_item_id }))
         })
         .await
@@ -85,8 +146,9 @@ impl ToDoItemRepository for PostgresToDoItemRepository {
 
     async fn create(&self, entity: ToDoItem) -> anyhow::Result<Uuid> {
         self.run_db(move |connection| {
+            let new_entity = NewDbToDoItem::from(&entity);
             diesel::insert_into(to_do_items)
-                .values(&entity)
+                .values(&new_entity)
                 .execute(connection)?;
             Ok(entity.id)
         })
@@ -95,12 +157,16 @@ impl ToDoItemRepository for PostgresToDoItemRepository {
 
     async fn update(&self, entity: ToDoItem) -> anyhow::Result<Uuid> {
         self.run_db(move |connection| {
+            let next_updated_at = Utc::now();
             let affected_rows = diesel::update(
                 to_do_items.filter(item_id.eq(entity.id).and(item_version.eq(entity.version))),
             )
             .set((
                 item_title.eq(entity.title.clone()),
                 item_note.eq(entity.note.clone()),
+                item_status.eq(entity.status.clone()),
+                item_due_at.eq(entity.due_at),
+                item_updated_at.eq(next_updated_at),
                 item_version.eq(entity.version + 1),
             ))
             .execute(connection)?;

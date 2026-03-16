@@ -8,6 +8,11 @@ table! {
         title -> Nullable<Varchar>,
         #[max_length = 255]
         note -> Nullable<Varchar>,
+        #[max_length = 32]
+        status -> Varchar,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+        due_at -> Nullable<Timestamptz>,
         version -> Int4,
     }
 }

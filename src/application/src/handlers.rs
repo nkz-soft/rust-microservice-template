@@ -50,7 +50,12 @@ impl CreateToDoItemQueryHandler {
 
     pub async fn execute(&self, query: CreateToDoItemQuery) -> anyhow::Result<Uuid> {
         self.repository
-            .create(ToDoItem::new(query.title, query.note))
+            .create(ToDoItem::new_with_lifecycle(
+                query.title,
+                query.note,
+                query.status,
+                query.due_at,
+            ))
             .await
     }
 }
@@ -72,6 +77,8 @@ impl UpdateToDoItemQueryHandler {
                 query.id,
                 query.title,
                 query.note,
+                query.status,
+                query.due_at,
                 query.version,
             ))
             .await

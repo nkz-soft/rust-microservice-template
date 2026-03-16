@@ -14,6 +14,7 @@ thiserror.workspace = true
 diesel.workspace = true
 diesel_migrations.workspace = true
 tokio.workspace = true
+chrono.workspace = true
 
 domain = { path = "../domain" }
 application = { path = "../application" }

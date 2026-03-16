@@ -16,13 +16,14 @@ problem_details = { version = "0.9.0", features = ["actix", "json"] }
 http = "1.4.0"
 
 # OpenAPI
-utoipa = { version = "5.4.0", features = ["actix_extras", "uuid"] }
+utoipa = { version = "5.4.0", features = ["actix_extras", "uuid", "chrono"] }
 utoipa-actix-web = "0.1.2"
 utoipa-swagger-ui = { version = "9.0.2", features = ["actix-web"] }
 
 # Serialization
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
+chrono = { version = "0.4.42", features = ["serde"] }
 
 # Async
 tokio = { version = "1.50.0", features = ["full"] }
@@ -30,7 +31,7 @@ async-trait = "0.1.89"
 
 # Database and ORM
 tokio-postgres = { version = "0.7.16", features = ["with-uuid-1"] }
-diesel = { version = "2.3.7", features = ["postgres", "r2d2", "uuid"] }
+diesel = { version = "2.3.7", features = ["postgres", "r2d2", "uuid", "chrono"] }
 diesel_migrations = "2.3.1"
 
 # Logging
