@@ -25,12 +25,12 @@ serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 
 # Async
-tokio = { version = "1.49.0", features = ["full"] }
+tokio = { version = "1.50.0", features = ["full"] }
 async-trait = "0.1.89"
 
 # Database and ORM
 tokio-postgres = { version = "0.7.16", features = ["with-uuid-1"] }
-diesel = { version = "2.3.6", features = ["postgres", "r2d2", "uuid"] }
+diesel = { version = "2.3.7", features = ["postgres", "r2d2", "uuid"] }
 diesel_migrations = "2.3.1"
 
 # Logging
@@ -40,7 +40,7 @@ tracing = "0.1.44"
 
 # Configuration
 dotenv = "0.15.0"
-config = "0.15.19"
+config = "0.15.21"
 
 # Error Handling
 anyhow = "1.0.102"
@@ -55,5 +55,5 @@ serial_test = "3.4.0"
 
 # Misc
 ctor = "0.6.3"
-uuid = { version = "1.21.0", features = ["v4", "serde"] }
+uuid = { version = "1.22.0", features = ["v4", "serde"] }
 readonly = "0.2.13"
