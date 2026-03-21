@@ -1,0 +1,2 @@
+[alias]
+coverage = "llvm-cov --workspace --all-features --html --output-dir target/coverage/html --fail-under-lines 90"

@@ -16,7 +16,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
     - name: Checkout
       uses: actions/checkout@v6
@@ -32,7 +35,10 @@ jobs:
       uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: stable
-        components: rustfmt, clippy
+        components: rustfmt, clippy, llvm-tools-preview
+    - name: Install cargo-llvm-cov
+      if: github.event_name == 'pull_request'
+      uses: taiki-e/install-action@cargo-llvm-cov
     - name: Check code style
       run: cargo fmt -- --check
     - name: Build
@@ -40,4 +46,36 @@ jobs:
     - name: Check code
       run: cargo clippy
     - name: Tests
+      if: github.event_name != 'pull_request'
       run: cargo test
+    - name: Generate coverage report
+      if: github.event_name == 'pull_request'
+      run: |
+        mkdir -p coverage
+        cargo llvm-cov --workspace --all-features --cobertura --output-path coverage/coverage.cobertura.xml --fail-under-lines 90
+    - name: Build coverage summary
+      if: github.event_name == 'pull_request'
+      uses: danielpalme/ReportGenerator-GitHub-Action@5.5.4
+      with:
+        reports: 'coverage/*.cobertura.xml'
+        targetdir: 'coverage/result'
+        reporttypes: 'Cobertura;MarkdownSummaryGithub'
+    - name: Publish coverage summary
+      if: github.event_name == 'pull_request'
+      run: |
+        echo "## Coverage" >> "$GITHUB_STEP_SUMMARY"
+        cat coverage/result/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
+    - name: Add Coverage PR Comment
+      uses: marocchino/sticky-pull-request-comment@v3
+      if: github.event_name == 'pull_request'
+      with:
+        recreate: true
+        path: coverage/result/SummaryGithub.md
+    - name: Upload coverage artifacts
+      if: github.event_name == 'pull_request'
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: |
+          coverage/*.cobertura.xml
+          coverage/result
