@@ -1,0 +1,89 @@
+openapi: 3.0.3
+info:
+  title: Audit To-Do Item Contract
+  version: "1.0"
+paths:
+  /api/v1/audit/to-do-items/{id}:
+    get:
+      summary: Retrieve a deleted to-do item by ID for audit purposes
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: header
+          name: X-Audit-Token
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted item returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditToDoItemResponse"
+        "401":
+          description: Missing or invalid audit token
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "404":
+          description: Deleted item not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+components:
+  schemas:
+    AuditToDoItemResponse:
+      type: object
+      required:
+        - id
+        - status
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          nullable: true
+        note:
+          type: string
+          nullable: true
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        due_at:
+          type: string
+          format: date-time
+          nullable: true
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+        deleted_by:
+          type: string
+          format: uuid
+          nullable: true
+    ProblemDetails:
+      type: object
+      required:
+        - status
+        - detail
+      properties:
+        status:
+          type: integer
+          format: int32
+        detail:
+          type: string

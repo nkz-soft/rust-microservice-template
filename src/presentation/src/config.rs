@@ -20,6 +20,10 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
                     .service(api::delete),
             )
             .service(
+                web::scope("/audit")
+                    .service(web::scope("/to-do-items").service(api::get_deleted_by_id_for_audit)),
+            )
+            .service(
                 web::scope("/healthz")
                     .service(api::startup)
                     .service(api::ready)

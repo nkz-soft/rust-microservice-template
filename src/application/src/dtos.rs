@@ -12,6 +12,8 @@ pub struct ToDoItemDto {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub due_at: Option<DateTime<Utc>>,
+    pub deleted_at: Option<DateTime<Utc>>,
+    pub deleted_by: Option<Uuid>,
 }
 
 impl ToDoItemDto {
@@ -24,6 +26,8 @@ impl ToDoItemDto {
             created_at: Utc::now(),
             updated_at: Utc::now(),
             due_at: None,
+            deleted_at: None,
+            deleted_by: None,
         }
     }
 }

@@ -1,3 +1,4 @@
+use actix_web::HttpRequest;
 use application::{
     CreateToDoItemQuery, GetAllToDoItemsQuery, SortDirection, ToDoItemSort, ToDoItemSortField,
     UpdateToDoItemQuery,
@@ -184,6 +185,36 @@ fn parse_sort(value: &str) -> Result<ToDoItemSort, String> {
     Ok(ToDoItemSort { field, direction })
 }
 
+pub const AUDIT_TOKEN_HEADER: &str = "X-Audit-Token";
+pub const DELETE_ACTOR_ID_HEADER: &str = "X-Actor-Id";
+
+pub fn parse_audit_token_header(request: &HttpRequest) -> Option<String> {
+    request
+        .headers()
+        .get(AUDIT_TOKEN_HEADER)
+        .and_then(|value| value.to_str().ok())
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+}
+
+pub fn parse_optional_delete_actor_id(request: &HttpRequest) -> Result<Option<Uuid>, String> {
+    let Some(raw_value) = request.headers().get(DELETE_ACTOR_ID_HEADER) else {
+        return Ok(None);
+    };
+
+    let value = raw_value
+        .to_str()
+        .map_err(|_| "X-Actor-Id header must be valid ASCII".to_string())?
+        .trim();
+    if value.is_empty() {
+        return Ok(None);
+    }
+
+    Uuid::parse_str(value)
+        .map(Some)
+        .map_err(|_| "X-Actor-Id header must be a valid UUID".to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -257,5 +288,24 @@ mod tests {
         };
 
         assert!(request.validate().is_err());
+    }
+
+    #[test]
+    fn parse_optional_delete_actor_id_rejects_invalid_uuid() {
+        let request = actix_web::test::TestRequest::default()
+            .insert_header((DELETE_ACTOR_ID_HEADER, "bad-uuid"))
+            .to_http_request();
+
+        assert!(parse_optional_delete_actor_id(&request).is_err());
+    }
+
+    #[test]
+    fn parse_audit_token_header_returns_trimmed_value() {
+        let request = actix_web::test::TestRequest::default()
+            .insert_header((AUDIT_TOKEN_HEADER, "  token  "))
+            .to_http_request();
+
+        let token = parse_audit_token_header(&request);
+        assert_eq!(token.as_deref(), Some("token"));
     }
 }
