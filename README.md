@@ -73,7 +73,7 @@ cargo coverage
 
 This writes the report to `target/coverage/html/index.html` and fails if total line coverage drops below `90%`.
 
-Pull requests to `main` also run the `coverage` GitHub Actions workflow, generate a Cobertura report, publish a Markdown coverage summary in the job output, add the same summary as a sticky pull request comment, and upload the generated coverage artifacts.
+Pull requests to `main` also run coverage as part of the branch build workflow, generate a Cobertura report, publish a Markdown coverage summary in the job output, add the same summary as a sticky pull request comment, and upload the generated coverage artifacts.
 
 ## Architecture
 The microservice follows a layered Domain Driven Design structure with a separate presentation boundary for the HTTP API.
