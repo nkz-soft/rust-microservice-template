@@ -15,6 +15,7 @@ If you're using this repository for your learning, samples or your project, plea
 ## Table of Contents
 
 - [Installation](#installation)
+- [Spec-Driven Workflow](#spec-driven-workflow)
 - [Architecture](#architecture)
 - [Implementation Details](#implementation-details)
 - [API Validation](#api-validation)
@@ -74,6 +75,56 @@ cargo coverage
 This writes the report to `target/coverage/html/index.html` and fails if total line coverage drops below `90%`.
 
 Pull requests to `main` also run coverage as part of the branch build workflow, generate a Cobertura report, publish a Markdown coverage summary in the job output, add the same summary as a sticky pull request comment, and upload the generated coverage artifacts.
+
+## Spec-Driven Workflow
+
+New feature work in this repository follows a Spec Kit lifecycle:
+
+1. `constitution`: repository rules live in `.specify/memory/constitution.md`
+2. `specify`: create or refine the feature specification in `specs/<feature>/spec.md`
+3. `plan`: produce `plan.md` plus supporting research and contracts when needed
+4. `tasks`: break the plan into executable work in `tasks.md`
+5. `implement`: execute the tasks and keep the artifacts in the same feature directory
+
+### Bootstrap
+
+Spec Kit is already initialized in this repository. From a clean clone you can scaffold a new feature with:
+
+```powershell
+.specify/scripts/powershell/create-new-feature.ps1 "Add structured logging"
+```
+
+That command creates a Git branch such as `feature/002-add-structured-logging` and a matching feature directory such as `specs/002-add-structured-logging/`.
+
+### Artifact Layout
+
+```text
+specs/
+  <feature>/
+    spec.md
+    plan.md
+    tasks.md
+    research.md
+    data-model.md
+    quickstart.md
+    contracts/
+    checklists/
+```
+
+### Codex Workflow
+
+Use the checked-in Codex prompts or skills for each phase:
+
+- `.codex/prompts/speckit.specify.md`
+- `.codex/prompts/speckit.plan.md`
+- `.codex/prompts/speckit.tasks.md`
+- `.codex/prompts/speckit.implement.md`
+
+The shared guidance for Codex is also available in `AGENTS.md`.
+
+### PR Guardrail
+
+Pull requests that change implementation files must also include updates under `specs/`. If a PR is intentionally exempt, add the `specs-exempt` label before merging.
 
 ## Architecture
 The microservice follows a layered Domain Driven Design structure with a separate presentation boundary for the HTTP API.
