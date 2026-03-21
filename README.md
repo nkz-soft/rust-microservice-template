@@ -19,6 +19,7 @@ If you're using this repository for your learning, samples or your project, plea
 - [Implementation Details](#implementation-details)
 - [API Validation](#api-validation)
 - [Configuration](#configuration)
+- [Coverage](#coverage)
 - [Deployment](#deployment)
 - [Plan](#plan)
 - [Technologies - Libraries](#technologies-used)
@@ -55,6 +56,24 @@ cd rust-microservice-template/deployment/docker
 ```bash
 curl -v  http://localhost:8181/api/v1/to-do-items
 ```
+
+### Coverage
+
+The workspace includes a `cargo` alias for coverage reporting.
+
+1. Install the coverage tool once:
+```bash
+cargo install cargo-llvm-cov
+rustup component add llvm-tools-preview
+```
+2. Generate the local HTML coverage report:
+```bash
+cargo coverage
+```
+
+This writes the report to `target/coverage/html/index.html` and fails if total line coverage drops below `90%`.
+
+Pull requests to `main` also run the `coverage` GitHub Actions workflow, generate a Cobertura report, publish a Markdown coverage summary in the job output, add the same summary as a sticky pull request comment, and upload the generated coverage artifacts.
 
 ## Architecture
 The microservice follows a layered Domain Driven Design structure with a separate presentation boundary for the HTTP API.
@@ -203,6 +222,7 @@ Future breaking API changes should be introduced under a new version prefix (for
     - [X] Add support for migrations
     - [X] CRUD Operation
 - [X] Integration tests
+- [ ] Automated code coverage reporting
 - [X] Configuration
     - [X] Configuration file
     - [X] Environment variables
