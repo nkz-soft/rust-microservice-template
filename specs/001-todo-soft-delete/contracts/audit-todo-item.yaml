@@ -1,0 +1,27 @@
+openapi: 3.0.3
+info:
+  title: Audit To-Do Item Contract
+  version: "1.0"
+paths:
+  /api/v1/audit/to-do-items/{id}:
+    get:
+      summary: Retrieve a deleted to-do item by ID for audit purposes
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: header
+          name: X-Audit-Token
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted item returned
+        "401":
+          description: Missing or invalid audit token
+        "404":
+          description: Deleted item not found
