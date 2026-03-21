@@ -14,5 +14,7 @@ table! {
         updated_at -> Timestamptz,
         due_at -> Nullable<Timestamptz>,
         version -> Int4,
+        deleted_at -> Nullable<Timestamptz>,
+        deleted_by -> Nullable<Uuid>,
     }
 }

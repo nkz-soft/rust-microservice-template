@@ -232,6 +232,9 @@ service_name = 'rust_template_service'
 
 [database]
 database_url = 'postgres://postgres:postgres@localhost:5432/rust_template_db'
+
+[audit]
+token = 'local-audit-token'
 ```
 
 You can also configure the service via environment variables.
@@ -240,7 +243,15 @@ You can also configure the service via environment variables.
 export MICROSERVICE__SERVICE__HTTP_URL="127.0.0.1:8181"
 export MICROSERVICE__SERVICE__SERVICE_NAME="rust_template_service"
 export MICROSERVICE__DATABASE__DATABASE_URL="postgres://postgres:postgres@localhost:5432/rust_template_db"
+export MICROSERVICE__AUDIT__TOKEN="local-audit-token"
 ```
+
+### Soft Delete and Audit Access
+
+- `DELETE /api/v1/to-do-items/{id}` performs a soft delete.
+- Optional header `X-Actor-Id` accepts a UUID and is stored as `deleted_by` when provided.
+- Standard reads (`GET /api/v1/to-do-items` and `GET /api/v1/to-do-items/{id}`) hide deleted items.
+- Audit read is restricted to `GET /api/v1/audit/to-do-items/{id}` with header `X-Audit-Token`.
 
 ### OpenAPI and Error Handling
 

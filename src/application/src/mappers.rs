@@ -19,6 +19,10 @@ impl ToDoItemMapper {
                 .get::<_, Option<SystemTime>>("due_at")
                 .map(DateTime::<Utc>::from),
             version: row.get("version"),
+            deleted_at: row
+                .get::<_, Option<SystemTime>>("deleted_at")
+                .map(DateTime::<Utc>::from),
+            deleted_by: row.get("deleted_by"),
         }
     }
 

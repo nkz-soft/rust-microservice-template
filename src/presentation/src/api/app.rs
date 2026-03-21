@@ -2,16 +2,21 @@ use actix_web::http::header::{ETAG, IF_MATCH};
 use actix_web::web::Data;
 use actix_web::{delete, post, put};
 use actix_web::{get, web, HttpResponse, Result};
-use application::DeleteToDoItemQuery;
-use application::GetAllToDoItemsQuery;
-use application::GetToDoItemQuery;
-use application::ToDoItemService;
+use application::{
+    Audit, DeleteToDoItemQuery, GetAllToDoItemsQuery, GetDeletedToDoItemForAuditQuery,
+    GetToDoItemQuery, ToDoItemService,
+};
 use uuid::Uuid;
 use validator::Validate;
 
 use crate::errors::HttpError;
-use crate::requests::{CreateToDoItemRequest, GetAllToDoItemsQueryRequest, UpdateToDoItemRequest};
-use crate::responses::{ProblemDetailsResponse, ToDoItemResponse, ToDoItemsPageResponse};
+use crate::requests::{
+    parse_audit_token_header, parse_optional_delete_actor_id, CreateToDoItemRequest,
+    GetAllToDoItemsQueryRequest, UpdateToDoItemRequest,
+};
+use crate::responses::{
+    AuditToDoItemResponse, ProblemDetailsResponse, ToDoItemResponse, ToDoItemsPageResponse,
+};
 
 const TODO: &str = "todo";
 
@@ -137,20 +142,64 @@ pub async fn update(
 pub async fn delete(
     service: Data<ToDoItemService>,
     id: web::Path<Uuid>,
+    request: actix_web::HttpRequest,
 ) -> Result<HttpResponse, HttpError> {
+    let deleted_by = parse_optional_delete_actor_id(&request).map_err(HttpError::bad_request)?;
     let handler = service.delete_handler();
 
     handler
-        .execute(DeleteToDoItemQuery::new(id.into_inner()))
+        .execute(DeleteToDoItemQuery::new(id.into_inner(), deleted_by))
         .await?;
 
     Ok(HttpResponse::from(HttpResponse::Ok()))
+}
+
+/// Retrieves a deleted to-do item by Id for audit purposes.
+#[utoipa::path(
+    context_path = "/api/v1/audit/to-do-items",
+    tag = TODO,
+    responses(
+        (status = 200, description = "Get deleted todo item by id for audit", body = AuditToDoItemResponse),
+        (status = 401, description = "Missing or invalid audit token", body = ProblemDetailsResponse),
+        (status = 404, description = "Deleted todo item not found", body = ProblemDetailsResponse)
+    ),
+    params(
+        ("id" = Uuid, Path, description = "Id of the deleted to-do item"),
+        ("X-Audit-Token" = String, Header, description = "Audit access token")
+    ),
+)]
+#[get("/{id}")]
+pub async fn get_deleted_by_id_for_audit(
+    service: Data<ToDoItemService>,
+    audit: Data<Audit>,
+    id: web::Path<Uuid>,
+    request: actix_web::HttpRequest,
+) -> Result<HttpResponse, HttpError> {
+    let provided_token = parse_audit_token_header(&request)
+        .ok_or_else(|| HttpError::unauthorized("missing X-Audit-Token header"))?;
+    let configured_token = audit
+        .token
+        .as_ref()
+        .filter(|token| !token.trim().is_empty())
+        .ok_or_else(|| HttpError::unauthorized("audit endpoint is not configured"))?;
+    if configured_token != &provided_token {
+        return Err(HttpError::unauthorized("invalid audit token"));
+    }
+
+    let handler = service.get_deleted_for_audit_handler();
+    let item = handler
+        .execute(GetDeletedToDoItemForAuditQuery::new(id.into_inner()))
+        .await?;
+    let data = AuditToDoItemResponse::from(item);
+
+    Ok(HttpResponse::Ok().json(data))
 }
 
 fn format_etag(version: i32) -> String {
     format!("\"{version}\"")
 }
 
+#[allow(clippy::result_large_err)]
 fn parse_if_match(request: &actix_web::HttpRequest) -> Result<i32, HttpError> {
     let raw = request
         .headers()

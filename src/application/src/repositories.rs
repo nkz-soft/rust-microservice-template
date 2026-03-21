@@ -11,7 +11,8 @@ pub trait ToDoItemRepository: Send + Sync {
         query: GetAllToDoItemsQuery,
     ) -> anyhow::Result<PaginatedResult<ToDoItem>>;
     async fn get_by_id(&self, id: Uuid) -> anyhow::Result<ToDoItem>;
+    async fn get_deleted_by_id_for_audit(&self, id: Uuid) -> anyhow::Result<ToDoItem>;
     async fn create(&self, entity: ToDoItem) -> anyhow::Result<Uuid>;
     async fn update(&self, entity: ToDoItem) -> anyhow::Result<Uuid>;
-    async fn delete(&self, id: Uuid) -> anyhow::Result<()>;
+    async fn delete(&self, id: Uuid, deleted_by: Option<Uuid>) -> anyhow::Result<()>;
 }

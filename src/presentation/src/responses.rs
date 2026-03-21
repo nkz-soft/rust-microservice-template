@@ -40,6 +40,45 @@ impl From<ToDoItem> for ToDoItemResponse {
 
 #[readonly::make]
 #[derive(Deserialize, Serialize, ToSchema)]
+pub struct AuditToDoItemResponse {
+    /// The id of the to-do item
+    pub id: Uuid,
+    /// The title of the to-do item
+    pub title: Option<String>,
+    /// The note of the to-do item
+    pub note: Option<String>,
+    /// Lifecycle status.
+    pub status: String,
+    /// Creation timestamp in UTC.
+    pub created_at: DateTime<Utc>,
+    /// Last update timestamp in UTC.
+    pub updated_at: DateTime<Utc>,
+    /// Optional due timestamp in UTC.
+    pub due_at: Option<DateTime<Utc>>,
+    /// Deletion timestamp in UTC.
+    pub deleted_at: Option<DateTime<Utc>>,
+    /// Optional actor that performed deletion.
+    pub deleted_by: Option<Uuid>,
+}
+
+impl From<ToDoItem> for AuditToDoItemResponse {
+    fn from(item: ToDoItem) -> Self {
+        Self {
+            id: item.id,
+            title: item.title,
+            note: item.note,
+            status: item.status,
+            created_at: item.created_at,
+            updated_at: item.updated_at,
+            due_at: item.due_at,
+            deleted_at: item.deleted_at,
+            deleted_by: item.deleted_by,
+        }
+    }
+}
+
+#[readonly::make]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct PaginationMetaResponse {
     /// One-based page number.
     pub page: u32,

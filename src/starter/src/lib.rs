@@ -33,6 +33,7 @@ async fn run_internal(settings: &Settings) -> Result<Server> {
 
     // Create service with dependency injection
     let todo_service = ToDoItemService::new(repository);
+    let audit_settings = settings.audit.clone();
 
     let server = HttpServer::new(move || {
         App::new()
@@ -46,6 +47,7 @@ async fn run_internal(settings: &Settings) -> Result<Server> {
             })
             .app_data(web::Data::new(pool.clone()))
             .app_data(web::Data::new(todo_service.clone()))
+            .app_data(web::Data::new(audit_settings.clone()))
             .into_app()
     })
     .bind(&settings.service.http_url)?

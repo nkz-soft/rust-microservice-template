@@ -98,12 +98,24 @@ mod tests {
             Ok(id)
         }
 
-        async fn delete(&self, id: Uuid) -> anyhow::Result<()> {
+        async fn delete(&self, id: Uuid, _deleted_by: Option<Uuid>) -> anyhow::Result<()> {
             *self.operation_count.lock().unwrap() += 1;
             sleep(Duration::from_millis(10)).await; // Simulate some work
             let mut items = self.items.lock().unwrap();
             items.retain(|item| item.id != id);
             Ok(())
+        }
+
+        async fn get_deleted_by_id_for_audit(&self, id: Uuid) -> anyhow::Result<ToDoItem> {
+            *self.operation_count.lock().unwrap() += 1;
+            sleep(Duration::from_millis(10)).await; // Simulate some work
+            self.items
+                .lock()
+                .unwrap()
+                .iter()
+                .find(|item| item.id == id && item.deleted_at.is_some())
+                .cloned()
+                .ok_or_else(|| anyhow::anyhow!("Item not found"))
         }
     }
 
