@@ -157,10 +157,21 @@ impl UpdateToDoItemQuery {
 
 pub struct DeleteToDoItemQuery {
     pub id: Uuid,
+    pub deleted_by: Option<Uuid>,
 }
 
 impl DeleteToDoItemQuery {
+    pub fn new(id: Uuid, deleted_by: Option<Uuid>) -> Self {
+        DeleteToDoItemQuery { id, deleted_by }
+    }
+}
+
+pub struct GetDeletedToDoItemForAuditQuery {
+    pub id: Uuid,
+}
+
+impl GetDeletedToDoItemForAuditQuery {
     pub fn new(id: Uuid) -> Self {
-        DeleteToDoItemQuery { id }
+        Self { id }
     }
 }

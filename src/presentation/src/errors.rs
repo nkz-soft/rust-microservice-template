@@ -45,6 +45,14 @@ impl HttpError {
                 .with_detail(detail.into()),
         )
     }
+
+    pub fn unauthorized(detail: impl Into<String>) -> Self {
+        HttpError::Problem(
+            ProblemDetails::new()
+                .with_status(HttpStatusCode::UNAUTHORIZED)
+                .with_detail(detail.into()),
+        )
+    }
 }
 
 impl Display for HttpError {

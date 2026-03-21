@@ -97,6 +97,25 @@ impl DeleteToDoItemQueryHandler {
     }
 
     pub async fn execute(&self, query: DeleteToDoItemQuery) -> anyhow::Result<()> {
-        self.repository.delete(query.id).await
+        self.repository.delete(query.id, query.deleted_by).await
+    }
+}
+
+pub struct GetDeletedToDoItemForAuditQueryHandler {
+    repository: Arc<dyn ToDoItemRepository + Send + Sync>,
+}
+
+impl GetDeletedToDoItemForAuditQueryHandler {
+    pub fn new(
+        repository: Arc<dyn ToDoItemRepository + Send + Sync>,
+    ) -> GetDeletedToDoItemForAuditQueryHandler {
+        GetDeletedToDoItemForAuditQueryHandler { repository }
+    }
+
+    pub async fn execute(
+        &self,
+        query: GetDeletedToDoItemForAuditQuery,
+    ) -> anyhow::Result<ToDoItem> {
+        self.repository.get_deleted_by_id_for_audit(query.id).await
     }
 }

@@ -14,8 +14,9 @@ use diesel::ExpressionMethods;
 use diesel::PgTextExpressionMethods;
 use diesel::{Insertable, OptionalExtension, PgConnection, QueryDsl, Queryable, RunQueryDsl};
 use domain::to_do_items::dsl::{
-    due_at as item_due_at, id as item_id, note as item_note, status as item_status,
-    title as item_title, to_do_items, updated_at as item_updated_at, version as item_version,
+    deleted_at as item_deleted_at, deleted_by as item_deleted_by, due_at as item_due_at,
+    id as item_id, note as item_note, status as item_status, title as item_title, to_do_items,
+    updated_at as item_updated_at, version as item_version,
 };
 use domain::ToDoItem;
 use tokio::task;
@@ -35,6 +36,8 @@ struct DbToDoItem {
     updated_at: DateTime<Utc>,
     due_at: Option<DateTime<Utc>>,
     version: i32,
+    deleted_at: Option<DateTime<Utc>>,
+    deleted_by: Option<Uuid>,
 }
 
 #[derive(Insertable)]
@@ -48,6 +51,8 @@ struct NewDbToDoItem {
     updated_at: DateTime<Utc>,
     due_at: Option<DateTime<Utc>>,
     version: i32,
+    deleted_at: Option<DateTime<Utc>>,
+    deleted_by: Option<Uuid>,
 }
 
 impl From<DbToDoItem> for ToDoItem {
@@ -61,6 +66,8 @@ impl From<DbToDoItem> for ToDoItem {
             updated_at: item.updated_at,
             due_at: item.due_at,
             version: item.version,
+            deleted_at: item.deleted_at,
+            deleted_by: item.deleted_by,
         }
     }
 }
@@ -76,6 +83,8 @@ impl From<&ToDoItem> for NewDbToDoItem {
             updated_at: item.updated_at,
             due_at: item.due_at,
             version: item.version,
+            deleted_at: item.deleted_at,
+            deleted_by: item.deleted_by,
         }
     }
 }
@@ -135,7 +144,19 @@ impl ToDoItemRepository for PostgresToDoItemRepository {
     async fn get_by_id(&self, todo_item_id: Uuid) -> anyhow::Result<ToDoItem> {
         self.run_db(move |connection| {
             to_do_items
-                .filter(item_id.eq(&todo_item_id))
+                .filter(item_id.eq(&todo_item_id).and(item_deleted_at.is_null()))
+                .first::<DbToDoItem>(connection)
+                .optional()?
+                .map(ToDoItem::from)
+                .ok_or(anyhow!(ItemNotFound { id: todo_item_id }))
+        })
+        .await
+    }
+
+    async fn get_deleted_by_id_for_audit(&self, todo_item_id: Uuid) -> anyhow::Result<ToDoItem> {
+        self.run_db(move |connection| {
+            to_do_items
+                .filter(item_id.eq(&todo_item_id).and(item_deleted_at.is_not_null()))
                 .first::<DbToDoItem>(connection)
                 .optional()?
                 .map(ToDoItem::from)
@@ -159,7 +180,12 @@ impl ToDoItemRepository for PostgresToDoItemRepository {
         self.run_db(move |connection| {
             let next_updated_at = Utc::now();
             let affected_rows = diesel::update(
-                to_do_items.filter(item_id.eq(entity.id).and(item_version.eq(entity.version))),
+                to_do_items.filter(
+                    item_id
+                        .eq(entity.id)
+                        .and(item_version.eq(entity.version))
+                        .and(item_deleted_at.is_null()),
+                ),
             )
             .set((
                 item_title.eq(entity.title.clone()),
@@ -176,7 +202,7 @@ impl ToDoItemRepository for PostgresToDoItemRepository {
             }
 
             let actual_version = to_do_items
-                .filter(item_id.eq(entity.id))
+                .filter(item_id.eq(entity.id).and(item_deleted_at.is_null()))
                 .select(item_version)
                 .first::<i32>(connection)
                 .optional()?;
@@ -193,9 +219,17 @@ impl ToDoItemRepository for PostgresToDoItemRepository {
         .await
     }
 
-    async fn delete(&self, todo_item_id: Uuid) -> anyhow::Result<()> {
+    async fn delete(&self, todo_item_id: Uuid, deleted_by: Option<Uuid>) -> anyhow::Result<()> {
         self.run_db(move |connection| {
-            diesel::delete(to_do_items.filter(item_id.eq(&todo_item_id))).execute(connection)?;
+            let deleted_at = Utc::now();
+            diesel::update(
+                to_do_items.filter(item_id.eq(&todo_item_id).and(item_deleted_at.is_null())),
+            )
+            .set((
+                item_deleted_at.eq(Some(deleted_at)),
+                item_deleted_by.eq(deleted_by),
+            ))
+            .execute(connection)?;
             Ok(())
         })
         .await
@@ -203,7 +237,9 @@ impl ToDoItemRepository for PostgresToDoItemRepository {
 }
 
 fn build_filtered_query<'a>(search: Option<&str>) -> domain::to_do_items::BoxedQuery<'a, Pg> {
-    let mut query = to_do_items.into_boxed::<Pg>();
+    let mut query = to_do_items
+        .filter(item_deleted_at.is_null())
+        .into_boxed::<Pg>();
 
     if let Some(search) = search {
         let pattern = format!("%{}%", search.trim());

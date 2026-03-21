@@ -10,6 +10,7 @@ pub struct ToDoItemService {
     create_handler: Arc<CreateToDoItemQueryHandler>,
     update_handler: Arc<UpdateToDoItemQueryHandler>,
     delete_handler: Arc<DeleteToDoItemQueryHandler>,
+    get_deleted_for_audit_handler: Arc<GetDeletedToDoItemForAuditQueryHandler>,
 }
 
 impl ToDoItemService {
@@ -19,7 +20,10 @@ impl ToDoItemService {
             get_all_handler: Arc::new(GetAllToDoItemQueryHandler::new(repository.clone())),
             create_handler: Arc::new(CreateToDoItemQueryHandler::new(repository.clone())),
             update_handler: Arc::new(UpdateToDoItemQueryHandler::new(repository.clone())),
-            delete_handler: Arc::new(DeleteToDoItemQueryHandler::new(repository)),
+            delete_handler: Arc::new(DeleteToDoItemQueryHandler::new(repository.clone())),
+            get_deleted_for_audit_handler: Arc::new(GetDeletedToDoItemForAuditQueryHandler::new(
+                repository,
+            )),
         }
     }
 
@@ -41,6 +45,10 @@ impl ToDoItemService {
 
     pub fn delete_handler(&self) -> Arc<DeleteToDoItemQueryHandler> {
         self.delete_handler.clone()
+    }
+
+    pub fn get_deleted_for_audit_handler(&self) -> Arc<GetDeletedToDoItemForAuditQueryHandler> {
+        self.get_deleted_for_audit_handler.clone()
     }
 }
 
@@ -72,6 +80,14 @@ impl ToDoItemServiceBoxed {
 
     pub fn create_delete_handler(&self) -> Box<DeleteToDoItemQueryHandler> {
         Box::new(DeleteToDoItemQueryHandler::new(self.repository.clone()))
+    }
+
+    pub fn create_get_deleted_for_audit_handler(
+        &self,
+    ) -> Box<GetDeletedToDoItemForAuditQueryHandler> {
+        Box::new(GetDeletedToDoItemForAuditQueryHandler::new(
+            self.repository.clone(),
+        ))
     }
 }
 
@@ -172,11 +188,22 @@ mod tests {
             Ok(id)
         }
 
-        async fn delete(&self, id: Uuid) -> anyhow::Result<()> {
+        async fn delete(&self, id: Uuid, _deleted_by: Option<Uuid>) -> anyhow::Result<()> {
             *self.call_count.lock().unwrap() += 1;
             let mut items = self.items.lock().unwrap();
             items.retain(|item| item.id != id);
             Ok(())
+        }
+
+        async fn get_deleted_by_id_for_audit(&self, id: Uuid) -> anyhow::Result<ToDoItem> {
+            *self.call_count.lock().unwrap() += 1;
+            self.items
+                .lock()
+                .unwrap()
+                .iter()
+                .find(|item| item.id == id && item.deleted_at.is_some())
+                .cloned()
+                .ok_or_else(|| anyhow::anyhow!("Item not found"))
         }
     }
 
@@ -191,6 +218,7 @@ mod tests {
         let create_handler = service.create_handler();
         let update_handler = service.update_handler();
         let delete_handler = service.delete_handler();
+        let get_deleted_handler = service.get_deleted_for_audit_handler();
 
         // Verify that we can get handlers without panicking
         assert!(Arc::strong_count(&get_handler) >= 1);
@@ -198,6 +226,7 @@ mod tests {
         assert!(Arc::strong_count(&create_handler) >= 1);
         assert!(Arc::strong_count(&update_handler) >= 1);
         assert!(Arc::strong_count(&delete_handler) >= 1);
+        assert!(Arc::strong_count(&get_deleted_handler) >= 1);
     }
 
     #[tokio::test]
@@ -263,6 +292,7 @@ mod tests {
         let create_handler = service.create_create_handler();
         let update_handler = service.create_update_handler();
         let delete_handler = service.create_delete_handler();
+        let get_deleted_handler = service.create_get_deleted_for_audit_handler();
 
         // Verify handlers are boxed correctly
         assert_eq!(
@@ -284,6 +314,10 @@ mod tests {
         assert_eq!(
             std::mem::size_of_val(&*delete_handler),
             std::mem::size_of::<DeleteToDoItemQueryHandler>()
+        );
+        assert_eq!(
+            std::mem::size_of_val(&*get_deleted_handler),
+            std::mem::size_of::<GetDeletedToDoItemForAuditQueryHandler>()
         );
     }
 

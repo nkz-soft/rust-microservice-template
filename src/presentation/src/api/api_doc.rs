@@ -2,6 +2,7 @@ use crate::api::app::__path_create;
 use crate::api::app::__path_delete;
 use crate::api::app::__path_get_all;
 use crate::api::app::__path_get_by_id;
+use crate::api::app::__path_get_deleted_by_id_for_audit;
 use crate::api::app::__path_update;
 use utoipa::OpenApi;
 
@@ -19,7 +20,8 @@ use utoipa::OpenApi;
         create,
         update,
         get_by_id,
-        delete
+        delete,
+        get_deleted_by_id_for_audit
     )
 )]
 pub struct ApiDoc;

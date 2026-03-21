@@ -15,6 +15,7 @@ mod tests {
     use crate::{prepare_test_environment, utils::test_server::TEST_SERVER_ONCE};
 
     const WEB_SERVER_PATH: &str = "http://localhost:8181/api/v1/";
+    const AUDIT_TOKEN: &str = "local-audit-token";
 
     #[dtor]
     fn cleanup() {
@@ -276,6 +277,233 @@ mod tests {
             .expect("Failed to execute request.");
 
         assert!(response.status().is_success());
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_delete_hides_item_from_standard_get_and_list() {
+        let client = prepare_test_environment!();
+        let unique_title = format!("hidden-{}", Uuid::new_v4());
+        let actor_id = Uuid::new_v4();
+
+        let id = client
+            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
+            .json(&json!({
+                "title": unique_title,
+                "note": "note1",
+                "status": "pending"
+            }))
+            .send()
+            .await
+            .expect("Failed to execute request.")
+            .json::<Uuid>()
+            .await
+            .expect("Failed to deserialize response.");
+
+        let response = client
+            .delete(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
+            .header("X-Actor-Id", actor_id.to_string())
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        assert!(response.status().is_success());
+
+        let get_response = client
+            .get(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        assert_eq!(get_response.status(), StatusCode::NOT_FOUND);
+
+        let list_response = client
+            .get(
+                WEB_SERVER_PATH.to_owned()
+                    + format!("to-do-items?search={}&page=1&page_size=10", unique_title).as_str(),
+            )
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        assert_eq!(list_response.status(), StatusCode::OK);
+        let list_body = list_response
+            .json::<Value>()
+            .await
+            .expect("Failed to deserialize response.");
+        assert_eq!(list_body["meta"]["total_items"], 0);
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_update_deleted_item_returns_not_found() {
+        let client = prepare_test_environment!();
+
+        let id = client
+            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
+            .json(&json!({
+                "title": "update-deleted",
+                "note": "note1",
+                "status": "pending"
+            }))
+            .send()
+            .await
+            .expect("Failed to execute request.")
+            .json::<Uuid>()
+            .await
+            .expect("Failed to deserialize response.");
+
+        let delete_response = client
+            .delete(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
+            .send()
+            .await
+            .expect("Failed to execute request.");
+        assert!(delete_response.status().is_success());
+
+        let update_response = client
+            .put(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
+            .header("If-Match", "\"1\"")
+            .json(&json!({
+                "title": "update-deleted",
+                "note": "note-updated",
+                "status": "done"
+            }))
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        assert_eq!(update_response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_audit_endpoint_returns_deleted_item_with_metadata() {
+        let client = prepare_test_environment!();
+        let actor_id = Uuid::new_v4();
+
+        let id = client
+            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
+            .json(&json!({
+                "title": "audit-visible",
+                "note": "note1",
+                "status": "pending"
+            }))
+            .send()
+            .await
+            .expect("Failed to execute request.")
+            .json::<Uuid>()
+            .await
+            .expect("Failed to deserialize response.");
+
+        let delete_response = client
+            .delete(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
+            .header("X-Actor-Id", actor_id.to_string())
+            .send()
+            .await
+            .expect("Failed to execute request.");
+        assert!(delete_response.status().is_success());
+
+        let audit_response = client
+            .get(WEB_SERVER_PATH.to_owned() + format!("audit/to-do-items/{id}").as_str())
+            .header("X-Audit-Token", AUDIT_TOKEN)
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        assert_eq!(audit_response.status(), StatusCode::OK);
+        let body = audit_response
+            .json::<Value>()
+            .await
+            .expect("Failed to deserialize response.");
+        assert_eq!(body["id"], id.to_string());
+        assert!(body["deleted_at"].is_string());
+        assert_eq!(body["deleted_by"], actor_id.to_string());
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_audit_endpoint_rejects_missing_or_invalid_token() {
+        let client = prepare_test_environment!();
+
+        let id = client
+            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
+            .json(&json!({
+                "title": "audit-auth",
+                "note": "note1",
+                "status": "pending"
+            }))
+            .send()
+            .await
+            .expect("Failed to execute request.")
+            .json::<Uuid>()
+            .await
+            .expect("Failed to deserialize response.");
+
+        let delete_response = client
+            .delete(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
+            .send()
+            .await
+            .expect("Failed to execute request.");
+        assert!(delete_response.status().is_success());
+
+        let missing_token_response = client
+            .get(WEB_SERVER_PATH.to_owned() + format!("audit/to-do-items/{id}").as_str())
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        assert_eq!(missing_token_response.status(), StatusCode::UNAUTHORIZED);
+
+        let invalid_token_response = client
+            .get(WEB_SERVER_PATH.to_owned() + format!("audit/to-do-items/{id}").as_str())
+            .header("X-Audit-Token", "wrong-token")
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        assert_eq!(invalid_token_response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_audit_endpoint_supports_delete_without_actor() {
+        let client = prepare_test_environment!();
+
+        let id = client
+            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
+            .json(&json!({
+                "title": "audit-no-actor",
+                "note": "note1",
+                "status": "pending"
+            }))
+            .send()
+            .await
+            .expect("Failed to execute request.")
+            .json::<Uuid>()
+            .await
+            .expect("Failed to deserialize response.");
+
+        let delete_response = client
+            .delete(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
+            .send()
+            .await
+            .expect("Failed to execute request.");
+        assert!(delete_response.status().is_success());
+
+        let audit_response = client
+            .get(WEB_SERVER_PATH.to_owned() + format!("audit/to-do-items/{id}").as_str())
+            .header("X-Audit-Token", AUDIT_TOKEN)
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        assert_eq!(audit_response.status(), StatusCode::OK);
+        let body = audit_response
+            .json::<Value>()
+            .await
+            .expect("Failed to deserialize response.");
+        assert!(body["deleted_at"].is_string());
+        assert!(body["deleted_by"].is_null());
     }
 
     #[serial]
