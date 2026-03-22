@@ -188,7 +188,7 @@ Invalid payloads return `400 Bad Request` with a problem-details JSON response.
 
 - `page`: one-based page number, default `1`
 - `page_size`: number of items per page, default `20`, maximum `100`
-- `search`: optional case-insensitive filter applied to title and note, must not be blank
+- `search`: optional case-insensitive filter applied to title and note content, must not be blank
 - `sort`: deterministic sorting, supports `id:asc`, `id:desc`, `title:asc`, and `title:desc`
 
 Example:
@@ -198,6 +198,8 @@ curl "http://localhost:8181/api/v1/to-do-items?page=1&page_size=10&search=milk&s
 ```
 
 Invalid query parameters also return `400 Bad Request`.
+
+Blank `search` values such as `search=   ` are rejected with `400 Bad Request` rather than being treated as a normal list request.
 
 #### List response shape
 

@@ -84,7 +84,7 @@ pub struct GetAllToDoItemsQueryRequest {
     #[serde(default = "default_page_size")]
     #[validate(range(min = 1, max = 100))]
     pub page_size: u32,
-    /// Optional case-insensitive search across title and note.
+    /// Optional case-insensitive search across title and note. Blank values are rejected with `400 Bad Request`.
     #[serde(default)]
     #[validate(length(max = 100))]
     pub search: Option<String>,
@@ -267,6 +267,19 @@ mod tests {
     }
 
     #[test]
+    fn query_request_trims_search_before_mapping() {
+        let query = GetAllToDoItemsQueryRequest {
+            page: 1,
+            page_size: 20,
+            search: Some("  milk  ".into()),
+            sort: None,
+        };
+
+        let mapped = query.to_query().expect("query should map");
+        assert_eq!(mapped.search.as_deref(), Some("milk"));
+    }
+
+    #[test]
     fn query_request_rejects_invalid_sort() {
         let query = GetAllToDoItemsQueryRequest {
             page: 1,
@@ -276,6 +289,23 @@ mod tests {
         };
 
         assert!(query.validate_sort().is_err());
+    }
+
+    #[test]
+    fn query_request_maps_search_and_sort_together() {
+        let query = GetAllToDoItemsQueryRequest {
+            page: 2,
+            page_size: 10,
+            search: Some("  note  ".into()),
+            sort: Some("title:desc".into()),
+        };
+
+        let mapped = query.to_query().expect("query should map");
+        assert_eq!(mapped.page, 2);
+        assert_eq!(mapped.page_size, 10);
+        assert_eq!(mapped.search.as_deref(), Some("note"));
+        assert_eq!(mapped.sort.field, ToDoItemSortField::Title);
+        assert_eq!(mapped.sort.direction, SortDirection::Desc);
     }
 
     #[test]

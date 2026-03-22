@@ -1,0 +1,52 @@
+openapi: 3.1.0
+info:
+  title: To-Do List Search Contract
+  version: "1.0.0"
+paths:
+  /api/v1/to-do-items:
+    get:
+      summary: List to-do items with optional text search
+      description: >
+        Returns a paginated list of active to-do items. Clients may provide an
+        optional search term to filter results by title or note content.
+      parameters:
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: One-based page number.
+        - in: query
+          name: page_size
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Number of items returned per page.
+        - in: query
+          name: search
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+          description: Optional case-insensitive text filter applied to title and note content.
+        - in: query
+          name: sort
+          required: false
+          schema:
+            type: string
+            enum:
+              - id:asc
+              - id:desc
+              - title:asc
+              - title:desc
+          description: Optional deterministic sort order.
+      responses:
+        "200":
+          description: Paginated list of matching active to-do items.
+        "400":
+          description: Invalid query parameters, including blank or malformed search input.

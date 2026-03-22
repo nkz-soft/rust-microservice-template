@@ -20,13 +20,13 @@ use crate::responses::{
 
 const TODO: &str = "todo";
 
-/// Retrieves a list of all to-do items.
+/// Retrieves a paginated list of active to-do items with optional text search.
 #[utoipa::path(
     context_path = "/api/v1/to-do-items",
     tag = TODO,
     responses(
-        (status = 200, description = "List current todo items", body = ToDoItemsPageResponse),
-        (status = 400, description = "Validation error", body = ProblemDetailsResponse)
+        (status = 200, description = "List active to-do items filtered by the optional search term", body = ToDoItemsPageResponse),
+        (status = 400, description = "Validation error for blank or malformed query parameters", body = ProblemDetailsResponse)
     ),
     params(GetAllToDoItemsQueryRequest)
 )]
