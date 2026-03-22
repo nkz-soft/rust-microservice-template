@@ -665,6 +665,173 @@ mod tests {
 
     #[serial]
     #[tokio::test]
+    async fn test_get_all_search_matches_title_and_excludes_non_matches() {
+        let client = prepare_test_environment!();
+        let matching_title = format!("milk-title-{}", Uuid::new_v4());
+        let non_matching_title = format!("bread-title-{}", Uuid::new_v4());
+
+        for payload in [
+            json!({
+                "title": matching_title,
+                "note": "ordinary note",
+                "status": "pending"
+            }),
+            json!({
+                "title": non_matching_title,
+                "note": "completely unrelated",
+                "status": "pending"
+            }),
+        ] {
+            let response = client
+                .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
+                .json(&payload)
+                .send()
+                .await
+                .expect("Failed to execute request.");
+            assert_eq!(response.status(), StatusCode::CREATED);
+        }
+
+        let response = client
+            .get(
+                WEB_SERVER_PATH.to_owned()
+                    + format!("to-do-items?search={matching_title}&page=1&page_size=10").as_str(),
+            )
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response
+            .json::<Value>()
+            .await
+            .expect("Failed to deserialize response.");
+        let items = body["items"].as_array().expect("items should be an array");
+        assert_eq!(body["meta"]["total_items"], 1);
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0]["title"], matching_title);
+        assert_ne!(items[0]["title"], non_matching_title);
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_get_all_search_matches_note_content() {
+        let client = prepare_test_environment!();
+        let matching_note = format!("buy-oats-note-{}", Uuid::new_v4());
+        let unique_title = format!("note-search-title-{}", Uuid::new_v4());
+
+        let response = client
+            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
+            .json(&json!({
+                "title": unique_title,
+                "note": matching_note,
+                "status": "pending"
+            }))
+            .send()
+            .await
+            .expect("Failed to execute request.");
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let response = client
+            .get(
+                WEB_SERVER_PATH.to_owned()
+                    + format!("to-do-items?search={matching_note}&page=1&page_size=10").as_str(),
+            )
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response
+            .json::<Value>()
+            .await
+            .expect("Failed to deserialize response.");
+        let items = body["items"].as_array().expect("items should be an array");
+        assert_eq!(body["meta"]["total_items"], 1);
+        assert_eq!(items[0]["title"], unique_title);
+        assert_eq!(items[0]["note"], matching_note);
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_get_all_search_returns_empty_page_for_non_matches() {
+        let client = prepare_test_environment!();
+        let response = client
+            .get(
+                WEB_SERVER_PATH.to_owned()
+                    + format!(
+                        "to-do-items?search=missing-{}&page=1&page_size=10",
+                        Uuid::new_v4()
+                    )
+                    .as_str(),
+            )
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response
+            .json::<Value>()
+            .await
+            .expect("Failed to deserialize response.");
+        assert_eq!(body["meta"]["total_items"], 0);
+        assert_eq!(
+            body["items"]
+                .as_array()
+                .expect("items should be an array")
+                .len(),
+            0
+        );
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_get_all_without_search_preserves_listing_behavior() {
+        let client = prepare_test_environment!();
+        let title = format!("default-list-{}", Uuid::new_v4());
+
+        let response = client
+            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
+            .json(&json!({
+                "title": title,
+                "note": "visible in default list",
+                "status": "pending"
+            }))
+            .send()
+            .await
+            .expect("Failed to execute request.");
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let response = client
+            .get(WEB_SERVER_PATH.to_owned() + "to-do-items?page=1&page_size=100")
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response
+            .json::<Value>()
+            .await
+            .expect("Failed to deserialize response.");
+        let items = body["items"].as_array().expect("items should be an array");
+        assert!(items.iter().any(|item| item["title"] == title));
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_get_all_rejects_blank_search_query() {
+        let client = prepare_test_environment!();
+
+        let response = client
+            .get(WEB_SERVER_PATH.to_owned() + "to-do-items?search=%20%20%20&page=1&page_size=10")
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    }
+
+    #[serial]
+    #[tokio::test]
     async fn test_create_rejects_oversized_payload() {
         let client = prepare_test_environment!();
         let oversized_body = json!({
