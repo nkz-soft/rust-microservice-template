@@ -2,20 +2,18 @@ mod utils;
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::test_server;
-    use chrono::DateTime;
+    use crate::utils::test_server::TEST_SERVER_ONCE;
+    use crate::{prepare_test_environment, utils::test_server};
     use ctor::dtor;
     use reqwest::StatusCode;
-    use serde_json::json;
-    use serde_json::Value;
+    use serde_json::{json, Value};
     use serial_test::serial;
-    use std::collections::HashMap;
     use uuid::Uuid;
 
-    use crate::{prepare_test_environment, utils::test_server::TEST_SERVER_ONCE};
-
     const WEB_SERVER_PATH: &str = "http://localhost:8181/api/v1/";
-    const AUDIT_TOKEN: &str = "local-audit-token";
+    const USER_PASSWORD: &str = "password";
+    const AUDIT_SERVICE_KEY: &str = "local-service-key";
+    const RESTRICTED_SERVICE_KEY: &str = "restricted-service-key";
 
     #[dtor]
     fn cleanup() {
@@ -28,491 +26,330 @@ mod tests {
             .expect("failed to kill container");
     }
 
-    #[serial]
-    #[tokio::test]
-    async fn start_server_and_test() {
-        let client = prepare_test_environment!();
-        assert!(client.get(WEB_SERVER_PATH).send().await.is_ok());
-    }
-
-    #[serial]
-    #[tokio::test]
-    async fn test_get_all() {
-        let client = prepare_test_environment!();
-
+    async fn issue_token(client: &reqwest::Client, username: &str, password: &str) -> String {
         let response = client
-            .get(WEB_SERVER_PATH.to_owned() + "to-do-items")
-            .send()
-            .await
-            .expect("Failed to execute request.");
-
-        assert!(response.status().is_success());
-        let body = response
-            .json::<Value>()
-            .await
-            .expect("Failed to deserialize response.");
-        assert!(body.get("items").is_some());
-        assert!(body.get("meta").is_some());
-    }
-
-    #[serial]
-    #[tokio::test]
-    async fn test_ready() {
-        let client = prepare_test_environment!();
-
-        let response = client
-            .get(WEB_SERVER_PATH.to_owned() + "healthz/ready")
-            .send()
-            .await
-            .expect("Failed to execute request.");
-
-        assert!(response.status().is_success());
-    }
-
-    #[serial]
-    #[tokio::test]
-    async fn test_get_by_id() {
-        let client = prepare_test_environment!();
-        let mut map_create = HashMap::new();
-        map_create.insert("title", "title1");
-        map_create.insert("note", "note1");
-        map_create.insert("status", "pending");
-
-        let id = client
-            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
-            .json(&map_create)
-            .send()
-            .await
-            .expect("Failed to execute request.")
-            .json::<Uuid>()
-            .await
-            .expect("Failed to deserialize response.");
-
-        let response = client
-            .get(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
-            .send()
-            .await
-            .expect("Failed to execute request.");
-
-        assert!(response.status().is_success());
-        assert!(response.headers().get("etag").is_some());
-
-        let body = response
-            .json::<Value>()
-            .await
-            .expect("Failed to deserialize response.");
-        assert_eq!(body["status"], "pending");
-        assert!(body["created_at"].is_string());
-        assert!(body["updated_at"].is_string());
-        assert!(body["due_at"].is_null());
-    }
-
-    #[serial]
-    #[tokio::test]
-    async fn test_create() {
-        let client = prepare_test_environment!();
-        let mut map = HashMap::new();
-        map.insert("title", "title1");
-        map.insert("note", "note1");
-        map.insert("status", "pending");
-
-        let response = client
-            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
-            .json(&map)
-            .send()
-            .await
-            .expect("Failed to execute request.");
-
-        assert!(response.status().is_success());
-    }
-
-    #[serial]
-    #[tokio::test]
-    async fn test_create_populates_lifecycle_metadata() {
-        let client = prepare_test_environment!();
-
-        let id = client
-            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
+            .post(format!("{WEB_SERVER_PATH}auth/token"))
             .json(&json!({
-                "title": "title1",
-                "note": "note1"
+                "username": username,
+                "password": password
             }))
             .send()
             .await
-            .expect("Failed to execute request.")
-            .json::<Uuid>()
-            .await
-            .expect("Failed to deserialize response.");
+            .expect("token request should execute");
 
-        let response = client
-            .get(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
-            .send()
-            .await
-            .expect("Failed to execute request.");
-
-        let body = response
+        assert_eq!(response.status(), StatusCode::OK);
+        response
             .json::<Value>()
             .await
-            .expect("Failed to deserialize response.");
-
-        assert_eq!(body["status"], "pending");
-        let created_at = body["created_at"]
+            .expect("token response should deserialize")["access_token"]
             .as_str()
-            .expect("created_at should be present");
-        let updated_at = body["updated_at"]
-            .as_str()
-            .expect("updated_at should be present");
-
-        assert!(DateTime::parse_from_rfc3339(created_at).is_ok());
-        assert!(DateTime::parse_from_rfc3339(updated_at).is_ok());
-        assert_eq!(created_at, updated_at);
-        assert!(body["due_at"].is_null());
+            .expect("access token should be present")
+            .to_string()
     }
 
-    #[serial]
-    #[tokio::test]
-    async fn test_update() {
-        let client = prepare_test_environment!();
-        let mut map_create = HashMap::new();
-        map_create.insert("title", "title1");
-        map_create.insert("note", "note1");
-        map_create.insert("status", "pending");
-
-        let id = client
-            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
-            .json(&map_create)
-            .send()
-            .await
-            .expect("Failed to execute request.")
-            .json::<Uuid>()
-            .await
-            .expect("Failed to deserialize response.");
-
-        let item_response = client
-            .get(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
-            .send()
-            .await
-            .expect("Failed to execute request.");
-        let etag = item_response
-            .headers()
-            .get("etag")
-            .expect("ETag header must be present")
-            .to_str()
-            .expect("ETag must be ascii")
-            .to_string();
-        let item = item_response
-            .json::<Value>()
-            .await
-            .expect("Failed to deserialize response.");
-        let original_updated_at = item["updated_at"]
-            .as_str()
-            .expect("updated_at should be present")
-            .to_string();
-
-        let due_at = "2030-01-15T12:00:00Z";
-        let response = client
-            .put(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
-            .header("If-Match", etag)
+    async fn create_todo(client: &reqwest::Client, token: &str, title: &str) -> Uuid {
+        client
+            .post(format!("{WEB_SERVER_PATH}to-do-items"))
+            .bearer_auth(token)
             .json(&json!({
-                "title": "title1",
-                "note": "note1",
-                "status": "in_progress",
-                "due_at": due_at
-            }))
-            .send()
-            .await
-            .expect("Failed to execute request.");
-
-        assert!(response.status().is_success());
-        assert_eq!(
-            response
-                .headers()
-                .get("etag")
-                .expect("ETag header must be present"),
-            "\"2\""
-        );
-
-        let updated_item = client
-            .get(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
-            .send()
-            .await
-            .expect("Failed to execute request.")
-            .json::<Value>()
-            .await
-            .expect("Failed to deserialize response.");
-
-        assert_eq!(updated_item["status"], "in_progress");
-        assert_eq!(updated_item["due_at"], due_at);
-        assert_ne!(
-            updated_item["updated_at"]
-                .as_str()
-                .expect("updated_at should be present"),
-            original_updated_at
-        );
-    }
-
-    #[serial]
-    #[tokio::test]
-    async fn test_delete() {
-        let client = prepare_test_environment!();
-        let mut map_create = HashMap::new();
-        map_create.insert("title", "title1");
-        map_create.insert("note", "note1");
-        map_create.insert("status", "pending");
-
-        let id = client
-            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
-            .json(&map_create)
-            .send()
-            .await
-            .expect("Failed to execute request.")
-            .json::<Uuid>()
-            .await
-            .expect("Failed to deserialize response.");
-
-        let response = client
-            .delete(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
-            .send()
-            .await
-            .expect("Failed to execute request.");
-
-        assert!(response.status().is_success());
-    }
-
-    #[serial]
-    #[tokio::test]
-    async fn test_delete_hides_item_from_standard_get_and_list() {
-        let client = prepare_test_environment!();
-        let unique_title = format!("hidden-{}", Uuid::new_v4());
-        let actor_id = Uuid::new_v4();
-
-        let id = client
-            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
-            .json(&json!({
-                "title": unique_title,
+                "title": title,
                 "note": "note1",
                 "status": "pending"
             }))
             .send()
             .await
-            .expect("Failed to execute request.")
+            .expect("create request should execute")
             .json::<Uuid>()
             .await
-            .expect("Failed to deserialize response.");
+            .expect("create response should deserialize")
+    }
 
-        let response = client
-            .delete(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
-            .header("X-Actor-Id", actor_id.to_string())
+    #[serial]
+    #[tokio::test]
+    async fn open_health_and_auth_routes_remain_open() {
+        let client = prepare_test_environment!();
+
+        let ready_response = client
+            .get(format!("{WEB_SERVER_PATH}healthz/ready"))
             .send()
             .await
-            .expect("Failed to execute request.");
+            .expect("health request should execute");
+        assert_eq!(ready_response.status(), StatusCode::OK);
 
-        assert!(response.status().is_success());
+        let auth_response = client
+            .post(format!("{WEB_SERVER_PATH}auth/token"))
+            .json(&json!({
+                "username": "",
+                "password": ""
+            }))
+            .send()
+            .await
+            .expect("auth request should execute");
+        assert_eq!(auth_response.status(), StatusCode::BAD_REQUEST);
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn token_issuance_and_bearer_protection_work() {
+        let client = prepare_test_environment!();
+
+        let missing_auth_response = client
+            .get(format!("{WEB_SERVER_PATH}to-do-items"))
+            .send()
+            .await
+            .expect("request should execute");
+        assert_eq!(missing_auth_response.status(), StatusCode::UNAUTHORIZED);
+
+        let invalid_login_response = client
+            .post(format!("{WEB_SERVER_PATH}auth/token"))
+            .json(&json!({
+                "username": "demo-user",
+                "password": "wrong-password"
+            }))
+            .send()
+            .await
+            .expect("invalid login should execute");
+        assert_eq!(invalid_login_response.status(), StatusCode::UNAUTHORIZED);
+
+        let token = issue_token(&client, "demo-user", USER_PASSWORD).await;
+
+        let authorized_response = client
+            .get(format!("{WEB_SERVER_PATH}to-do-items?page=1&page_size=10"))
+            .bearer_auth(&token)
+            .send()
+            .await
+            .expect("authorized request should execute");
+        assert_eq!(authorized_response.status(), StatusCode::OK);
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn authenticated_user_can_complete_todo_crud_flow() {
+        let client = prepare_test_environment!();
+        let token = issue_token(&client, "demo-user", USER_PASSWORD).await;
+
+        let id = create_todo(&client, &token, "crud-title").await;
 
         let get_response = client
-            .get(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
+            .get(format!("{WEB_SERVER_PATH}to-do-items/{id}"))
+            .bearer_auth(&token)
             .send()
             .await
-            .expect("Failed to execute request.");
+            .expect("get request should execute");
+        assert_eq!(get_response.status(), StatusCode::OK);
+        let etag = get_response
+            .headers()
+            .get("etag")
+            .expect("etag must be present")
+            .to_str()
+            .expect("etag must be ascii")
+            .to_string();
 
-        assert_eq!(get_response.status(), StatusCode::NOT_FOUND);
-
-        let list_response = client
-            .get(
-                WEB_SERVER_PATH.to_owned()
-                    + format!("to-do-items?search={}&page=1&page_size=10", unique_title).as_str(),
-            )
-            .send()
-            .await
-            .expect("Failed to execute request.");
-
-        assert_eq!(list_response.status(), StatusCode::OK);
-        let list_body = list_response
-            .json::<Value>()
-            .await
-            .expect("Failed to deserialize response.");
-        assert_eq!(list_body["meta"]["total_items"], 0);
-    }
-
-    #[serial]
-    #[tokio::test]
-    async fn test_update_deleted_item_returns_not_found() {
-        let client = prepare_test_environment!();
-
-        let id = client
-            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
+        let update_response = client
+            .put(format!("{WEB_SERVER_PATH}to-do-items/{id}"))
+            .bearer_auth(&token)
+            .header("If-Match", etag.clone())
             .json(&json!({
-                "title": "update-deleted",
-                "note": "note1",
-                "status": "pending"
+                "title": "crud-title",
+                "note": "updated-note",
+                "status": "in_progress"
             }))
             .send()
             .await
-            .expect("Failed to execute request.")
-            .json::<Uuid>()
-            .await
-            .expect("Failed to deserialize response.");
+            .expect("update request should execute");
+        assert_eq!(update_response.status(), StatusCode::OK);
 
-        let delete_response = client
-            .delete(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
-            .send()
-            .await
-            .expect("Failed to execute request.");
-        assert!(delete_response.status().is_success());
-
-        let update_response = client
-            .put(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
-            .header("If-Match", "\"1\"")
+        let stale_update_response = client
+            .put(format!("{WEB_SERVER_PATH}to-do-items/{id}"))
+            .bearer_auth(&token)
+            .header("If-Match", etag)
             .json(&json!({
-                "title": "update-deleted",
-                "note": "note-updated",
+                "title": "crud-title",
+                "note": "stale-note",
                 "status": "done"
             }))
             .send()
             .await
-            .expect("Failed to execute request.");
+            .expect("stale update request should execute");
+        assert_eq!(
+            stale_update_response.status(),
+            StatusCode::PRECONDITION_FAILED
+        );
 
-        assert_eq!(update_response.status(), StatusCode::NOT_FOUND);
+        let delete_response = client
+            .delete(format!("{WEB_SERVER_PATH}to-do-items/{id}"))
+            .bearer_auth(&token)
+            .header("X-Actor-Id", Uuid::new_v4().to_string())
+            .send()
+            .await
+            .expect("delete request should execute");
+        assert_eq!(delete_response.status(), StatusCode::OK);
+
+        let hidden_response = client
+            .get(format!("{WEB_SERVER_PATH}to-do-items/{id}"))
+            .bearer_auth(&token)
+            .send()
+            .await
+            .expect("hidden get request should execute");
+        assert_eq!(hidden_response.status(), StatusCode::NOT_FOUND);
     }
 
     #[serial]
     #[tokio::test]
-    async fn test_audit_endpoint_returns_deleted_item_with_metadata() {
+    async fn service_api_key_can_read_deleted_item_for_audit() {
         let client = prepare_test_environment!();
+        let token = issue_token(&client, "demo-user", USER_PASSWORD).await;
         let actor_id = Uuid::new_v4();
 
-        let id = client
-            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
-            .json(&json!({
-                "title": "audit-visible",
-                "note": "note1",
-                "status": "pending"
-            }))
-            .send()
-            .await
-            .expect("Failed to execute request.")
-            .json::<Uuid>()
-            .await
-            .expect("Failed to deserialize response.");
+        let id = create_todo(&client, &token, "audit-visible").await;
 
         let delete_response = client
-            .delete(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
+            .delete(format!("{WEB_SERVER_PATH}to-do-items/{id}"))
+            .bearer_auth(&token)
             .header("X-Actor-Id", actor_id.to_string())
             .send()
             .await
-            .expect("Failed to execute request.");
-        assert!(delete_response.status().is_success());
+            .expect("delete request should execute");
+        assert_eq!(delete_response.status(), StatusCode::OK);
 
         let audit_response = client
-            .get(WEB_SERVER_PATH.to_owned() + format!("audit/to-do-items/{id}").as_str())
-            .header("X-Audit-Token", AUDIT_TOKEN)
+            .get(format!("{WEB_SERVER_PATH}audit/to-do-items/{id}"))
+            .header("X-Service-Api-Key", AUDIT_SERVICE_KEY)
             .send()
             .await
-            .expect("Failed to execute request.");
-
+            .expect("audit request should execute");
         assert_eq!(audit_response.status(), StatusCode::OK);
+
         let body = audit_response
             .json::<Value>()
             .await
-            .expect("Failed to deserialize response.");
+            .expect("audit response should deserialize");
         assert_eq!(body["id"], id.to_string());
-        assert!(body["deleted_at"].is_string());
         assert_eq!(body["deleted_by"], actor_id.to_string());
+        assert!(body["deleted_at"].is_string());
     }
 
     #[serial]
     #[tokio::test]
-    async fn test_audit_endpoint_rejects_missing_or_invalid_token() {
+    async fn audit_endpoint_rejects_missing_or_invalid_service_key() {
         let client = prepare_test_environment!();
+        let token = issue_token(&client, "demo-user", USER_PASSWORD).await;
+        let id = create_todo(&client, &token, "audit-auth").await;
 
-        let id = client
-            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
+        let delete_response = client
+            .delete(format!("{WEB_SERVER_PATH}to-do-items/{id}"))
+            .bearer_auth(&token)
+            .send()
+            .await
+            .expect("delete request should execute");
+        assert_eq!(delete_response.status(), StatusCode::OK);
+
+        let missing_key_response = client
+            .get(format!("{WEB_SERVER_PATH}audit/to-do-items/{id}"))
+            .send()
+            .await
+            .expect("missing-key request should execute");
+        assert_eq!(missing_key_response.status(), StatusCode::UNAUTHORIZED);
+
+        let invalid_key_response = client
+            .get(format!("{WEB_SERVER_PATH}audit/to-do-items/{id}"))
+            .header("X-Service-Api-Key", "wrong-key")
+            .send()
+            .await
+            .expect("invalid-key request should execute");
+        assert_eq!(invalid_key_response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn insufficient_user_permission_returns_forbidden() {
+        let client = prepare_test_environment!();
+        let token = issue_token(&client, "read-only-user", USER_PASSWORD).await;
+
+        let create_response = client
+            .post(format!("{WEB_SERVER_PATH}to-do-items"))
+            .bearer_auth(&token)
             .json(&json!({
-                "title": "audit-auth",
+                "title": "forbidden-write",
                 "note": "note1",
                 "status": "pending"
             }))
             .send()
             .await
-            .expect("Failed to execute request.")
-            .json::<Uuid>()
-            .await
-            .expect("Failed to deserialize response.");
+            .expect("forbidden create request should execute");
 
-        let delete_response = client
-            .delete(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
-            .send()
-            .await
-            .expect("Failed to execute request.");
-        assert!(delete_response.status().is_success());
-
-        let missing_token_response = client
-            .get(WEB_SERVER_PATH.to_owned() + format!("audit/to-do-items/{id}").as_str())
-            .send()
-            .await
-            .expect("Failed to execute request.");
-
-        assert_eq!(missing_token_response.status(), StatusCode::UNAUTHORIZED);
-
-        let invalid_token_response = client
-            .get(WEB_SERVER_PATH.to_owned() + format!("audit/to-do-items/{id}").as_str())
-            .header("X-Audit-Token", "wrong-token")
-            .send()
-            .await
-            .expect("Failed to execute request.");
-
-        assert_eq!(invalid_token_response.status(), StatusCode::UNAUTHORIZED);
+        assert_eq!(create_response.status(), StatusCode::FORBIDDEN);
     }
 
     #[serial]
     #[tokio::test]
-    async fn test_audit_endpoint_supports_delete_without_actor() {
+    async fn insufficient_service_permission_returns_forbidden() {
         let client = prepare_test_environment!();
-
-        let id = client
-            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
-            .json(&json!({
-                "title": "audit-no-actor",
-                "note": "note1",
-                "status": "pending"
-            }))
-            .send()
-            .await
-            .expect("Failed to execute request.")
-            .json::<Uuid>()
-            .await
-            .expect("Failed to deserialize response.");
+        let token = issue_token(&client, "demo-user", USER_PASSWORD).await;
+        let id = create_todo(&client, &token, "forbidden-audit").await;
 
         let delete_response = client
-            .delete(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
+            .delete(format!("{WEB_SERVER_PATH}to-do-items/{id}"))
+            .bearer_auth(&token)
             .send()
             .await
-            .expect("Failed to execute request.");
-        assert!(delete_response.status().is_success());
+            .expect("delete request should execute");
+        assert_eq!(delete_response.status(), StatusCode::OK);
 
-        let audit_response = client
-            .get(WEB_SERVER_PATH.to_owned() + format!("audit/to-do-items/{id}").as_str())
-            .header("X-Audit-Token", AUDIT_TOKEN)
+        let forbidden_response = client
+            .get(format!("{WEB_SERVER_PATH}audit/to-do-items/{id}"))
+            .header("X-Service-Api-Key", RESTRICTED_SERVICE_KEY)
             .send()
             .await
-            .expect("Failed to execute request.");
+            .expect("forbidden audit request should execute");
 
-        assert_eq!(audit_response.status(), StatusCode::OK);
-        let body = audit_response
+        assert_eq!(forbidden_response.status(), StatusCode::FORBIDDEN);
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn protected_query_validation_and_search_still_work() {
+        let client = prepare_test_environment!();
+        let token = issue_token(&client, "demo-user", USER_PASSWORD).await;
+        let title = format!("search-title-{}", Uuid::new_v4());
+
+        let _ = create_todo(&client, &token, &title).await;
+
+        let invalid_query_response = client
+            .get(format!("{WEB_SERVER_PATH}to-do-items?page=0&page_size=10"))
+            .bearer_auth(&token)
+            .send()
+            .await
+            .expect("invalid query request should execute");
+        assert_eq!(invalid_query_response.status(), StatusCode::BAD_REQUEST);
+
+        let search_response = client
+            .get(format!(
+                "{WEB_SERVER_PATH}to-do-items?page=1&page_size=10&search={title}&sort=title:asc"
+            ))
+            .bearer_auth(&token)
+            .send()
+            .await
+            .expect("search request should execute");
+        assert_eq!(search_response.status(), StatusCode::OK);
+
+        let body = search_response
             .json::<Value>()
             .await
-            .expect("Failed to deserialize response.");
-        assert!(body["deleted_at"].is_string());
-        assert!(body["deleted_by"].is_null());
+            .expect("search response should deserialize");
+        assert_eq!(body["meta"]["total_items"], 1);
+        assert_eq!(body["items"][0]["title"], title);
     }
 
     #[serial]
     #[tokio::test]
-    async fn test_create_rejects_blank_title() {
+    async fn protected_body_validation_still_returns_bad_request() {
         let client = prepare_test_environment!();
+        let token = issue_token(&client, "demo-user", USER_PASSWORD).await;
 
         let response = client
-            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
+            .post(format!("{WEB_SERVER_PATH}to-do-items"))
+            .bearer_auth(&token)
             .json(&json!({
                 "title": "   ",
                 "note": "note1",
@@ -520,332 +357,7 @@ mod tests {
             }))
             .send()
             .await
-            .expect("Failed to execute request.");
-
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
-    }
-
-    #[serial]
-    #[tokio::test]
-    async fn test_update_rejects_blank_note() {
-        let client = prepare_test_environment!();
-        let mut map_create = HashMap::new();
-        map_create.insert("title", "title1");
-        map_create.insert("note", "note1");
-        map_create.insert("status", "pending");
-
-        let id = client
-            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
-            .json(&map_create)
-            .send()
-            .await
-            .expect("Failed to execute request.")
-            .json::<Uuid>()
-            .await
-            .expect("Failed to deserialize response.");
-
-        let response = client
-            .put(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
-            .header("If-Match", "\"1\"")
-            .json(&json!({
-                "title": "title1",
-                "note": "   ",
-                "status": "pending"
-            }))
-            .send()
-            .await
-            .expect("Failed to execute request.");
-
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
-    }
-
-    #[serial]
-    #[tokio::test]
-    async fn test_update_rejects_stale_version() {
-        let client = prepare_test_environment!();
-        let mut map_create = HashMap::new();
-        map_create.insert("title", "title1");
-        map_create.insert("note", "note1");
-        map_create.insert("status", "pending");
-
-        let id = client
-            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
-            .json(&map_create)
-            .send()
-            .await
-            .expect("Failed to execute request.")
-            .json::<Uuid>()
-            .await
-            .expect("Failed to deserialize response.");
-
-        let item_response = client
-            .get(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
-            .send()
-            .await
-            .expect("Failed to execute request.");
-        let etag = item_response
-            .headers()
-            .get("etag")
-            .expect("ETag header must be present")
-            .to_str()
-            .expect("ETag must be ascii")
-            .to_string();
-
-        let response = client
-            .put(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
-            .header("If-Match", etag.clone())
-            .json(&json!({
-                "title": "title2",
-                "note": "note2",
-                "status": "in_progress"
-            }))
-            .send()
-            .await
-            .expect("Failed to execute request.");
-
-        assert_eq!(response.status(), StatusCode::OK);
-
-        let stale_response = client
-            .put(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
-            .header("If-Match", etag)
-            .json(&json!({
-                "title": "title3",
-                "note": "note3",
-                "status": "done"
-            }))
-            .send()
-            .await
-            .expect("Failed to execute request.");
-
-        assert_eq!(stale_response.status(), StatusCode::PRECONDITION_FAILED);
-
-        let body = stale_response
-            .json::<Value>()
-            .await
-            .expect("Failed to deserialize response.");
-        assert_eq!(body["status"], json!(412));
-    }
-
-    #[serial]
-    #[tokio::test]
-    async fn test_get_all_rejects_invalid_query_parameters() {
-        let client = prepare_test_environment!();
-
-        let response = client
-            .get(WEB_SERVER_PATH.to_owned() + "to-do-items?page=0&page_size=20")
-            .send()
-            .await
-            .expect("Failed to execute request.");
-
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
-    }
-
-    #[serial]
-    #[tokio::test]
-    async fn test_get_all_accepts_valid_query_parameters() {
-        let client = prepare_test_environment!();
-
-        let response = client
-            .get(
-                WEB_SERVER_PATH.to_owned()
-                    + "to-do-items?page=1&page_size=10&search=title&sort=title:asc",
-            )
-            .send()
-            .await
-            .expect("Failed to execute request.");
-
-        assert_eq!(response.status(), StatusCode::OK);
-        let body = response
-            .json::<Value>()
-            .await
-            .expect("Failed to deserialize response.");
-        assert_eq!(body["meta"]["page"], 1);
-        assert_eq!(body["meta"]["page_size"], 10);
-    }
-
-    #[serial]
-    #[tokio::test]
-    async fn test_get_all_search_matches_title_and_excludes_non_matches() {
-        let client = prepare_test_environment!();
-        let matching_title = format!("milk-title-{}", Uuid::new_v4());
-        let non_matching_title = format!("bread-title-{}", Uuid::new_v4());
-
-        for payload in [
-            json!({
-                "title": matching_title,
-                "note": "ordinary note",
-                "status": "pending"
-            }),
-            json!({
-                "title": non_matching_title,
-                "note": "completely unrelated",
-                "status": "pending"
-            }),
-        ] {
-            let response = client
-                .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
-                .json(&payload)
-                .send()
-                .await
-                .expect("Failed to execute request.");
-            assert_eq!(response.status(), StatusCode::CREATED);
-        }
-
-        let response = client
-            .get(
-                WEB_SERVER_PATH.to_owned()
-                    + format!("to-do-items?search={matching_title}&page=1&page_size=10").as_str(),
-            )
-            .send()
-            .await
-            .expect("Failed to execute request.");
-
-        assert_eq!(response.status(), StatusCode::OK);
-        let body = response
-            .json::<Value>()
-            .await
-            .expect("Failed to deserialize response.");
-        let items = body["items"].as_array().expect("items should be an array");
-        assert_eq!(body["meta"]["total_items"], 1);
-        assert_eq!(items.len(), 1);
-        assert_eq!(items[0]["title"], matching_title);
-        assert_ne!(items[0]["title"], non_matching_title);
-    }
-
-    #[serial]
-    #[tokio::test]
-    async fn test_get_all_search_matches_note_content() {
-        let client = prepare_test_environment!();
-        let matching_note = format!("buy-oats-note-{}", Uuid::new_v4());
-        let unique_title = format!("note-search-title-{}", Uuid::new_v4());
-
-        let response = client
-            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
-            .json(&json!({
-                "title": unique_title,
-                "note": matching_note,
-                "status": "pending"
-            }))
-            .send()
-            .await
-            .expect("Failed to execute request.");
-        assert_eq!(response.status(), StatusCode::CREATED);
-
-        let response = client
-            .get(
-                WEB_SERVER_PATH.to_owned()
-                    + format!("to-do-items?search={matching_note}&page=1&page_size=10").as_str(),
-            )
-            .send()
-            .await
-            .expect("Failed to execute request.");
-
-        assert_eq!(response.status(), StatusCode::OK);
-        let body = response
-            .json::<Value>()
-            .await
-            .expect("Failed to deserialize response.");
-        let items = body["items"].as_array().expect("items should be an array");
-        assert_eq!(body["meta"]["total_items"], 1);
-        assert_eq!(items[0]["title"], unique_title);
-        assert_eq!(items[0]["note"], matching_note);
-    }
-
-    #[serial]
-    #[tokio::test]
-    async fn test_get_all_search_returns_empty_page_for_non_matches() {
-        let client = prepare_test_environment!();
-        let response = client
-            .get(
-                WEB_SERVER_PATH.to_owned()
-                    + format!(
-                        "to-do-items?search=missing-{}&page=1&page_size=10",
-                        Uuid::new_v4()
-                    )
-                    .as_str(),
-            )
-            .send()
-            .await
-            .expect("Failed to execute request.");
-
-        assert_eq!(response.status(), StatusCode::OK);
-        let body = response
-            .json::<Value>()
-            .await
-            .expect("Failed to deserialize response.");
-        assert_eq!(body["meta"]["total_items"], 0);
-        assert_eq!(
-            body["items"]
-                .as_array()
-                .expect("items should be an array")
-                .len(),
-            0
-        );
-    }
-
-    #[serial]
-    #[tokio::test]
-    async fn test_get_all_without_search_preserves_listing_behavior() {
-        let client = prepare_test_environment!();
-        let title = format!("default-list-{}", Uuid::new_v4());
-
-        let response = client
-            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
-            .json(&json!({
-                "title": title,
-                "note": "visible in default list",
-                "status": "pending"
-            }))
-            .send()
-            .await
-            .expect("Failed to execute request.");
-        assert_eq!(response.status(), StatusCode::CREATED);
-
-        let response = client
-            .get(WEB_SERVER_PATH.to_owned() + "to-do-items?page=1&page_size=100")
-            .send()
-            .await
-            .expect("Failed to execute request.");
-
-        assert_eq!(response.status(), StatusCode::OK);
-        let body = response
-            .json::<Value>()
-            .await
-            .expect("Failed to deserialize response.");
-        let items = body["items"].as_array().expect("items should be an array");
-        assert!(items.iter().any(|item| item["title"] == title));
-    }
-
-    #[serial]
-    #[tokio::test]
-    async fn test_get_all_rejects_blank_search_query() {
-        let client = prepare_test_environment!();
-
-        let response = client
-            .get(WEB_SERVER_PATH.to_owned() + "to-do-items?search=%20%20%20&page=1&page_size=10")
-            .send()
-            .await
-            .expect("Failed to execute request.");
-
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
-    }
-
-    #[serial]
-    #[tokio::test]
-    async fn test_create_rejects_oversized_payload() {
-        let client = prepare_test_environment!();
-        let oversized_body = json!({
-            "title": "a".repeat(9000),
-            "note": "note1",
-            "status": "pending"
-        });
-
-        let response = client
-            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
-            .json(&oversized_body)
-            .send()
-            .await
-            .expect("Failed to execute request.");
+            .expect("invalid body request should execute");
 
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     }

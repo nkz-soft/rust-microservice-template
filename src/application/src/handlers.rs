@@ -1,5 +1,7 @@
+use crate::dtos::TokenResponse;
 use crate::queries::*;
 use crate::repositories::*;
+use crate::services::AuthService;
 use domain::ToDoItem;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -117,5 +119,23 @@ impl GetDeletedToDoItemForAuditQueryHandler {
         query: GetDeletedToDoItemForAuditQuery,
     ) -> anyhow::Result<ToDoItem> {
         self.repository.get_deleted_by_id_for_audit(query.id).await
+    }
+}
+
+pub struct LoginQueryHandler {
+    auth_service: Arc<AuthService>,
+}
+
+impl LoginQueryHandler {
+    pub fn new(auth_service: Arc<AuthService>) -> Self {
+        Self { auth_service }
+    }
+
+    pub async fn execute(
+        &self,
+        query: LoginQuery,
+    ) -> Result<TokenResponse, crate::services::AuthError> {
+        self.auth_service
+            .authenticate_user(&query.username, &query.password)
     }
 }

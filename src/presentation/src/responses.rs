@@ -1,4 +1,5 @@
 use application::PaginatedResult;
+use application::TokenResponse;
 use chrono::{DateTime, Utc};
 use domain::ToDoItem;
 use serde::{Deserialize, Serialize};
@@ -124,4 +125,24 @@ pub struct ProblemDetailsResponse {
     pub status: u16,
     /// Human-readable explanation specific to this occurrence of the problem.
     pub detail: String,
+}
+
+#[readonly::make]
+#[derive(Deserialize, Serialize, ToSchema)]
+pub struct TokenResponseBody {
+    pub access_token: String,
+    pub token_type: String,
+    pub expires_in: i64,
+    pub permissions: Vec<String>,
+}
+
+impl From<TokenResponse> for TokenResponseBody {
+    fn from(response: TokenResponse) -> Self {
+        Self {
+            access_token: response.access_token,
+            token_type: response.token_type,
+            expires_in: response.expires_in,
+            permissions: response.permissions,
+        }
+    }
 }

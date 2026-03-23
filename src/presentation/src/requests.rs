@@ -1,7 +1,7 @@
 use actix_web::HttpRequest;
 use application::{
-    CreateToDoItemQuery, GetAllToDoItemsQuery, SortDirection, ToDoItemSort, ToDoItemSortField,
-    UpdateToDoItemQuery,
+    CreateToDoItemQuery, GetAllToDoItemsQuery, LoginQuery, SortDirection, ToDoItemSort,
+    ToDoItemSortField, UpdateToDoItemQuery,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -11,6 +11,9 @@ use validator::{Validate, ValidationError};
 
 const DEFAULT_PAGE: u32 = 1;
 const DEFAULT_PAGE_SIZE: u32 = 20;
+pub const AUTHORIZATION_HEADER: &str = "Authorization";
+pub const DEFAULT_SERVICE_API_KEY_HEADER: &str = "X-Service-Api-Key";
+pub const DELETE_ACTOR_ID_HEADER: &str = "X-Actor-Id";
 
 fn validate_not_blank(value: &str) -> Result<(), ValidationError> {
     if value.trim().is_empty() {
@@ -36,6 +39,21 @@ fn validate_status(value: &str) -> Result<(), ValidationError> {
     match value.trim().to_ascii_lowercase().as_str() {
         "pending" | "in_progress" | "done" => Ok(()),
         _ => Err(ValidationError::new("invalid_status")),
+    }
+}
+
+#[readonly::make]
+#[derive(Deserialize, Serialize, ToSchema, Validate)]
+pub struct TokenRequest {
+    #[validate(length(min = 1), custom(function = "validate_not_blank"))]
+    pub username: String,
+    #[validate(length(min = 1), custom(function = "validate_not_blank"))]
+    pub password: String,
+}
+
+impl TokenRequest {
+    pub fn to_query(&self) -> LoginQuery {
+        LoginQuery::new(self.username.trim(), self.password.as_str())
     }
 }
 
@@ -185,13 +203,21 @@ fn parse_sort(value: &str) -> Result<ToDoItemSort, String> {
     Ok(ToDoItemSort { field, direction })
 }
 
-pub const AUDIT_TOKEN_HEADER: &str = "X-Audit-Token";
-pub const DELETE_ACTOR_ID_HEADER: &str = "X-Actor-Id";
+pub fn parse_bearer_token_header(request: &HttpRequest) -> Option<String> {
+    let header = request.headers().get(AUTHORIZATION_HEADER)?;
+    let value = header.to_str().ok()?.trim();
+    let token = value.strip_prefix("Bearer ")?.trim();
+    if token.is_empty() {
+        return None;
+    }
 
-pub fn parse_audit_token_header(request: &HttpRequest) -> Option<String> {
+    Some(token.to_string())
+}
+
+pub fn parse_service_api_key_header(request: &HttpRequest, header_name: &str) -> Option<String> {
     request
         .headers()
-        .get(AUDIT_TOKEN_HEADER)
+        .get(header_name)
         .and_then(|value| value.to_str().ok())
         .map(|value| value.trim().to_string())
         .filter(|value| !value.is_empty())
@@ -218,6 +244,16 @@ pub fn parse_optional_delete_actor_id(request: &HttpRequest) -> Result<Option<Uu
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn token_request_rejects_blank_username() {
+        let request = TokenRequest {
+            username: "  ".into(),
+            password: "password".into(),
+        };
+
+        assert!(request.validate().is_err());
+    }
 
     #[test]
     fn create_request_rejects_blank_title() {
@@ -330,12 +366,22 @@ mod tests {
     }
 
     #[test]
-    fn parse_audit_token_header_returns_trimmed_value() {
+    fn parse_bearer_token_header_returns_trimmed_value() {
         let request = actix_web::test::TestRequest::default()
-            .insert_header((AUDIT_TOKEN_HEADER, "  token  "))
+            .insert_header((AUTHORIZATION_HEADER, "Bearer  token  "))
             .to_http_request();
 
-        let token = parse_audit_token_header(&request);
+        let token = parse_bearer_token_header(&request);
         assert_eq!(token.as_deref(), Some("token"));
+    }
+
+    #[test]
+    fn parse_service_api_key_header_returns_trimmed_value() {
+        let request = actix_web::test::TestRequest::default()
+            .insert_header((DEFAULT_SERVICE_API_KEY_HEADER, "  key  "))
+            .to_http_request();
+
+        let token = parse_service_api_key_header(&request, DEFAULT_SERVICE_API_KEY_HEADER);
+        assert_eq!(token.as_deref(), Some("key"));
     }
 }

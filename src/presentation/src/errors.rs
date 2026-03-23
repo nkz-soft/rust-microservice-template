@@ -1,6 +1,7 @@
 use actix_web::error::{JsonPayloadError, QueryPayloadError};
 use actix_web::web::Json;
 use actix_web::{HttpResponse, ResponseError};
+use application::AuthError;
 use http::StatusCode as HttpStatusCode;
 use infrastructure as errors;
 use problem_details::{JsonProblemDetails, ProblemDetails};
@@ -53,6 +54,14 @@ impl HttpError {
                 .with_detail(detail.into()),
         )
     }
+
+    pub fn forbidden(detail: impl Into<String>) -> Self {
+        HttpError::Problem(
+            ProblemDetails::new()
+                .with_status(HttpStatusCode::FORBIDDEN)
+                .with_detail(detail.into()),
+        )
+    }
 }
 
 impl Display for HttpError {
@@ -97,6 +106,10 @@ impl From<QueryPayloadError> for HttpError {
 
 impl From<anyhow::Error> for HttpError {
     fn from(err: anyhow::Error) -> Self {
+        if let Some(err) = err.downcast_ref::<AuthError>() {
+            return (*err).clone().into();
+        }
+
         if let Some(err) = err.downcast_ref::<errors::Error>() {
             match err {
                 errors::Error::ItemNotFound { .. } => HttpError::Problem(
@@ -111,6 +124,20 @@ impl From<anyhow::Error> for HttpError {
             }
         } else {
             HttpError::internal_server_error(err.to_string())
+        }
+    }
+}
+
+impl From<AuthError> for HttpError {
+    fn from(err: AuthError) -> Self {
+        match err {
+            AuthError::InvalidCredentials
+            | AuthError::MissingBearerToken
+            | AuthError::InvalidBearerToken
+            | AuthError::MissingServiceApiKey
+            | AuthError::InvalidServiceApiKey => HttpError::unauthorized(err.to_string()),
+            AuthError::Forbidden => HttpError::forbidden(err.to_string()),
+            AuthError::Configuration(detail) => HttpError::internal_server_error(detail),
         }
     }
 }

@@ -2,7 +2,7 @@ use actix_web::dev::Server;
 use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpServer};
 use anyhow::Result;
-use application::{Settings, ToDoItemService};
+use application::{AuthService, Settings, ToDoItemService};
 use infrastructure::PostgresToDoItemRepository;
 use log::{debug, info};
 use std::sync::Arc;
@@ -33,7 +33,8 @@ async fn run_internal(settings: &Settings) -> Result<Server> {
 
     // Create service with dependency injection
     let todo_service = ToDoItemService::new(repository);
-    let audit_settings = settings.audit.clone();
+    let auth_service =
+        AuthService::new(settings.auth.clone()).map_err(|err| anyhow::anyhow!(err.to_string()))?;
 
     let server = HttpServer::new(move || {
         App::new()
@@ -47,7 +48,7 @@ async fn run_internal(settings: &Settings) -> Result<Server> {
             })
             .app_data(web::Data::new(pool.clone()))
             .app_data(web::Data::new(todo_service.clone()))
-            .app_data(web::Data::new(audit_settings.clone()))
+            .app_data(web::Data::new(auth_service.clone()))
             .into_app()
     })
     .bind(&settings.service.http_url)?

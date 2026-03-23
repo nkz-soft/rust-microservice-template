@@ -1,0 +1,124 @@
+openapi: 3.1.0
+info:
+  title: Authentication and Protected API Contract
+  version: "1.0.0"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    serviceApiKey:
+      type: apiKey
+      in: header
+      name: X-Service-Api-Key
+  schemas:
+    TokenRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          minLength: 1
+    TokenResponse:
+      type: object
+      required:
+        - access_token
+        - token_type
+        - expires_in
+        - permissions
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          enum: [Bearer]
+        expires_in:
+          type: integer
+          minimum: 1
+        permissions:
+          type: array
+          items:
+            type: string
+    ProblemDetails:
+      type: object
+      properties:
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+paths:
+  /api/v1/auth/token:
+    post:
+      summary: Issue a bearer token for a configured user
+      description: >
+        Validates bootstrap user credentials and returns a signed JWT for
+        subsequent bearer-authenticated requests.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TokenRequest"
+      responses:
+        "200":
+          description: Token issued successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "401":
+          description: Invalid credentials.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+  /api/v1/to-do-items:
+    get:
+      summary: List to-do items
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Authenticated caller with required permission can list to-do items.
+        "401":
+          description: Missing, malformed, expired, or invalid bearer token.
+        "403":
+          description: Authenticated caller lacks the required permission.
+    post:
+      summary: Create a to-do item
+      security:
+        - bearerAuth: []
+      responses:
+        "201":
+          description: Authenticated caller with write permission created a to-do item.
+        "401":
+          description: Missing, malformed, expired, or invalid bearer token.
+        "403":
+          description: Authenticated caller lacks the required permission.
+  /api/v1/audit/to-do-items/{id}:
+    get:
+      summary: Retrieve a deleted to-do item for audit purposes
+      security:
+        - serviceApiKey: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Service principal with the required permission can access the deleted item.
+        "401":
+          description: Missing or invalid service API key.
+        "403":
+          description: Authenticated service principal lacks the required permission.

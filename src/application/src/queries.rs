@@ -1,6 +1,8 @@
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
+use crate::dtos::{Permission, PrincipalType};
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SortDirection {
     Asc,
@@ -174,4 +176,55 @@ impl GetDeletedToDoItemForAuditQuery {
     pub fn new(id: Uuid) -> Self {
         Self { id }
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LoginQuery {
+    pub username: String,
+    pub password: String,
+}
+
+impl LoginQuery {
+    pub fn new(username: impl Into<String>, password: impl Into<String>) -> Self {
+        Self {
+            username: username.into(),
+            password: password.into(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProtectedEndpointPolicy {
+    pub required_permission: Permission,
+    pub accepted_principal_types: Vec<PrincipalType>,
+}
+
+impl ProtectedEndpointPolicy {
+    pub fn new(
+        required_permission: Permission,
+        accepted_principal_types: Vec<PrincipalType>,
+    ) -> Self {
+        Self {
+            required_permission,
+            accepted_principal_types,
+        }
+    }
+}
+
+pub fn todo_read_policy() -> ProtectedEndpointPolicy {
+    ProtectedEndpointPolicy::new(
+        Permission::TodoRead,
+        vec![PrincipalType::User, PrincipalType::Service],
+    )
+}
+
+pub fn todo_write_policy() -> ProtectedEndpointPolicy {
+    ProtectedEndpointPolicy::new(
+        Permission::TodoWrite,
+        vec![PrincipalType::User, PrincipalType::Service],
+    )
+}
+
+pub fn audit_read_policy() -> ProtectedEndpointPolicy {
+    ProtectedEndpointPolicy::new(Permission::AuditRead, vec![PrincipalType::Service])
 }

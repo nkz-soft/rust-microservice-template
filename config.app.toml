@@ -5,5 +5,38 @@ service_name = 'rust_template_service'
 [database]
 database_url = 'postgres://postgres:postgres@localhost:5432/rust_template_db'
 
-[audit]
-token = 'local-audit-token'
+[auth]
+jwt_issuer = 'rust-template-service'
+jwt_audience = 'rust-template-clients'
+jwt_signing_secret = 'replace-for-local-dev-only'
+jwt_ttl_seconds = 3600
+
+[[auth.users]]
+username = 'demo-user'
+password_hash = '$argon2id$v=19$m=19456,t=2,p=1$c29tZXNhbHQ$PL01amPyeUuxG7H0vIr5X+qHkZvWnHmGBGXFYvh8z2E'
+permissions = ['todo:read', 'todo:write']
+roles = ['writer']
+
+[[auth.users]]
+username = 'read-only-user'
+password_hash = '$argon2id$v=19$m=19456,t=2,p=1$c29tZXNhbHQ$PL01amPyeUuxG7H0vIr5X+qHkZvWnHmGBGXFYvh8z2E'
+permissions = ['todo:read']
+roles = ['reader']
+
+[[auth.users]]
+username = 'audit-user'
+password_hash = '$argon2id$v=19$m=19456,t=2,p=1$c29tZXNhbHQ$PL01amPyeUuxG7H0vIr5X+qHkZvWnHmGBGXFYvh8z2E'
+permissions = ['todo:read', 'audit:read']
+roles = ['auditor']
+
+[[auth.services]]
+service_name = 'audit-client'
+header_name = 'X-Service-Api-Key'
+key = 'local-service-key'
+permissions = ['audit:read']
+
+[[auth.services]]
+service_name = 'restricted-client'
+header_name = 'X-Service-Api-Key'
+key = 'restricted-service-key'
+permissions = ['todo:read']

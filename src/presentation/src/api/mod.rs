@@ -13,4 +13,5 @@ pub use app::delete;
 pub use app::get_all;
 pub use app::get_by_id;
 pub use app::get_deleted_by_id_for_audit;
+pub use app::issue_token;
 pub use app::update;

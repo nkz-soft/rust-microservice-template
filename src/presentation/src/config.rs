@@ -11,6 +11,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.app_data(query_config());
     cfg.service(
         web::scope("/api/v1")
+            .service(web::scope("/auth").service(api::issue_token))
             .service(
                 web::scope("/to-do-items")
                     .service(api::get_all)

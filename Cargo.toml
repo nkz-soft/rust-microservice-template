@@ -47,6 +47,10 @@ config = "0.15.21"
 anyhow = "1.0.102"
 thiserror = "2.0.18"
 validator = { version = "0.20.0", features = ["derive"] }
+jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
+actix-web-httpauth = "0.8.2"
+argon2 = "0.5.3"
+password-hash = "0.5.0"
 
 # Testing
 testcontainers = "0.27.1"

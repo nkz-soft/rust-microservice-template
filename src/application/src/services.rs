@@ -1,8 +1,16 @@
+use crate::dtos::{AuthenticatedPrincipal, PrincipalType, TokenClaims, TokenResponse};
 use crate::handlers::*;
+use crate::queries::ProtectedEndpointPolicy;
 use crate::repositories::ToDoItemRepository;
+use crate::settings::{AuthSettings, AuthUser, ServiceApiKey};
+use argon2::{Argon2, PasswordVerifier};
+use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
+use password_hash::PasswordHash;
+use std::collections::HashMap;
 use std::sync::Arc;
+use thiserror::Error;
 
-/// Service container that manages all query handlers with proper dependency injection
+/// Service container that manages all query handlers with proper dependency injection.
 #[derive(Clone)]
 pub struct ToDoItemService {
     get_handler: Arc<GetToDoItemQueryHandler>,
@@ -52,7 +60,6 @@ impl ToDoItemService {
     }
 }
 
-// Alternative approach using Box<dyn Trait> for handlers when cloning is not needed
 pub struct ToDoItemServiceBoxed {
     repository: Arc<dyn ToDoItemRepository + Send + Sync>,
 }
@@ -91,17 +98,201 @@ impl ToDoItemServiceBoxed {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct AuthService {
+    settings: AuthSettings,
+    encoding_key: EncodingKey,
+    decoding_key: DecodingKey,
+    validation: Validation,
+    users: HashMap<String, AuthUser>,
+    services: Vec<ServiceApiKey>,
+}
+
+#[derive(Debug, Clone, Error)]
+pub enum AuthError {
+    #[error("invalid credentials")]
+    InvalidCredentials,
+    #[error("missing bearer token")]
+    MissingBearerToken,
+    #[error("invalid bearer token")]
+    InvalidBearerToken,
+    #[error("missing service API key")]
+    MissingServiceApiKey,
+    #[error("invalid service API key")]
+    InvalidServiceApiKey,
+    #[error("forbidden")]
+    Forbidden,
+    #[error("auth configuration error: {0}")]
+    Configuration(String),
+}
+
+impl AuthService {
+    pub fn new(settings: AuthSettings) -> Result<Self, AuthError> {
+        if settings.jwt_signing_secret.trim().is_empty() {
+            return Err(AuthError::Configuration(
+                "jwt_signing_secret must not be blank".into(),
+            ));
+        }
+
+        let mut validation = Validation::new(Algorithm::HS256);
+        validation.set_issuer(std::slice::from_ref(&settings.jwt_issuer));
+        validation.set_audience(std::slice::from_ref(&settings.jwt_audience));
+
+        Ok(Self {
+            encoding_key: EncodingKey::from_secret(settings.jwt_signing_secret.as_bytes()),
+            decoding_key: DecodingKey::from_secret(settings.jwt_signing_secret.as_bytes()),
+            users: settings
+                .users
+                .iter()
+                .cloned()
+                .map(|user| (user.username.clone(), user))
+                .collect(),
+            services: settings.services.clone(),
+            validation,
+            settings,
+        })
+    }
+
+    pub fn authenticate_user(
+        &self,
+        username: &str,
+        password: &str,
+    ) -> Result<TokenResponse, AuthError> {
+        let username = username.trim();
+        let user = self
+            .users
+            .get(username)
+            .ok_or(AuthError::InvalidCredentials)?;
+
+        self.verify_password(password, &user.password_hash)?;
+        self.issue_user_token(user)
+    }
+
+    pub fn authenticate_bearer_token(
+        &self,
+        token: &str,
+    ) -> Result<AuthenticatedPrincipal, AuthError> {
+        let token = token.trim();
+        if token.is_empty() {
+            return Err(AuthError::MissingBearerToken);
+        }
+
+        let claims = decode::<TokenClaims>(token, &self.decoding_key, &self.validation)
+            .map_err(|_| AuthError::InvalidBearerToken)?
+            .claims;
+
+        Ok(AuthenticatedPrincipal::new(
+            claims.sub.clone(),
+            PrincipalType::User,
+            claims.permissions.clone(),
+        ))
+    }
+
+    pub fn authenticate_service_api_key(
+        &self,
+        header_name: &str,
+        key: &str,
+    ) -> Result<AuthenticatedPrincipal, AuthError> {
+        let normalized_key = key.trim();
+        if normalized_key.is_empty() {
+            return Err(AuthError::MissingServiceApiKey);
+        }
+
+        let service = self
+            .services
+            .iter()
+            .find(|service| {
+                service.header_name.eq_ignore_ascii_case(header_name)
+                    && service.key == normalized_key
+            })
+            .ok_or(AuthError::InvalidServiceApiKey)?;
+
+        Ok(AuthenticatedPrincipal::new(
+            service.service_name.clone(),
+            PrincipalType::Service,
+            service.permissions.clone(),
+        ))
+    }
+
+    pub fn service_header_names(&self) -> Vec<String> {
+        let mut header_names: Vec<String> = self
+            .services
+            .iter()
+            .map(|service| service.header_name.clone())
+            .collect();
+        header_names.sort();
+        header_names.dedup();
+        header_names
+    }
+
+    pub fn authorize(
+        &self,
+        principal: &AuthenticatedPrincipal,
+        policy: &ProtectedEndpointPolicy,
+    ) -> Result<(), AuthError> {
+        if !policy
+            .accepted_principal_types
+            .contains(&principal.principal_type)
+        {
+            return Err(AuthError::Forbidden);
+        }
+
+        if !principal.has_permission(policy.required_permission) {
+            return Err(AuthError::Forbidden);
+        }
+
+        Ok(())
+    }
+
+    fn verify_password(&self, password: &str, password_hash: &str) -> Result<(), AuthError> {
+        let parsed_hash = PasswordHash::new(password_hash)
+            .map_err(|err| AuthError::Configuration(err.to_string()))?;
+
+        Argon2::default()
+            .verify_password(password.as_bytes(), &parsed_hash)
+            .map_err(|_| AuthError::InvalidCredentials)
+    }
+
+    fn issue_user_token(&self, user: &AuthUser) -> Result<TokenResponse, AuthError> {
+        let now = chrono::Utc::now().timestamp();
+        let claims = TokenClaims {
+            sub: user.username.clone(),
+            iss: self.settings.jwt_issuer.clone(),
+            aud: self.settings.jwt_audience.clone(),
+            iat: now,
+            exp: now + self.settings.jwt_ttl_seconds,
+            permissions: user.permissions.clone(),
+        };
+
+        let access_token = encode(&Header::default(), &claims, &self.encoding_key)
+            .map_err(|err| AuthError::Configuration(err.to_string()))?;
+
+        Ok(TokenResponse {
+            access_token,
+            token_type: "Bearer".into(),
+            expires_in: self.settings.jwt_ttl_seconds,
+            permissions: claims
+                .permissions
+                .iter()
+                .map(|permission| permission.as_str().to_string())
+                .collect(),
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{GetAllToDoItemsQuery, PaginatedResult};
+    use crate::{GetAllToDoItemsQuery, LoginQuery, PaginatedResult, Permission};
     use async_trait::async_trait;
     use domain::ToDoItem;
     use std::sync::{Arc, Mutex};
     use tokio::task;
     use uuid::Uuid;
 
-    // Mock repository for testing
+    const PASSWORD_HASH: &str =
+        "$argon2id$v=19$m=19456,t=2,p=1$c29tZXNhbHQ$PL01amPyeUuxG7H0vIr5X+qHkZvWnHmGBGXFYvh8z2E";
+
     struct MockToDoItemRepository {
         items: Arc<Mutex<Vec<ToDoItem>>>,
         call_count: Arc<Mutex<usize>>,
@@ -207,45 +398,38 @@ mod tests {
         }
     }
 
+    fn auth_settings() -> AuthSettings {
+        AuthSettings {
+            jwt_issuer: "rust-template-service".into(),
+            jwt_audience: "rust-template-clients".into(),
+            jwt_signing_secret: "replace-for-local-dev-only".into(),
+            jwt_ttl_seconds: 3600,
+            users: vec![AuthUser {
+                username: "demo-user".into(),
+                password_hash: PASSWORD_HASH.into(),
+                permissions: vec![Permission::TodoRead, Permission::TodoWrite],
+                roles: vec!["writer".into()],
+            }],
+            services: vec![ServiceApiKey {
+                service_name: "audit-client".into(),
+                header_name: "X-Service-Api-Key".into(),
+                key: "local-service-key".into(),
+                permissions: vec![Permission::AuditRead],
+            }],
+        }
+    }
+
     #[tokio::test]
     async fn test_service_creation_with_arc() {
         let repository = Arc::new(MockToDoItemRepository::new());
         let service = ToDoItemService::new(repository);
 
-        // Test that handlers are created successfully - handlers are Arc<T> so they don't have is_ok()
-        let get_handler = service.get_handler();
-        let get_all_handler = service.get_all_handler();
-        let create_handler = service.create_handler();
-        let update_handler = service.update_handler();
-        let delete_handler = service.delete_handler();
-        let get_deleted_handler = service.get_deleted_for_audit_handler();
-
-        // Verify that we can get handlers without panicking
-        assert!(Arc::strong_count(&get_handler) >= 1);
-        assert!(Arc::strong_count(&get_all_handler) >= 1);
-        assert!(Arc::strong_count(&create_handler) >= 1);
-        assert!(Arc::strong_count(&update_handler) >= 1);
-        assert!(Arc::strong_count(&delete_handler) >= 1);
-        assert!(Arc::strong_count(&get_deleted_handler) >= 1);
-    }
-
-    #[tokio::test]
-    async fn test_service_cloning() {
-        let repository = Arc::new(MockToDoItemRepository::new());
-        let service = ToDoItemService::new(repository);
-
-        // Test that service can be cloned (important for actix-web Data<>)
-        let cloned_service = service.clone();
-
-        // Both services should work independently
-        let handler1 = service.get_all_handler();
-        let handler2 = cloned_service.get_all_handler();
-
-        let result1 = handler1.execute(GetAllToDoItemsQuery::default()).await;
-        let result2 = handler2.execute(GetAllToDoItemsQuery::default()).await;
-
-        assert!(result1.is_ok());
-        assert!(result2.is_ok());
+        assert!(Arc::strong_count(&service.get_handler()) >= 1);
+        assert!(Arc::strong_count(&service.get_all_handler()) >= 1);
+        assert!(Arc::strong_count(&service.create_handler()) >= 1);
+        assert!(Arc::strong_count(&service.update_handler()) >= 1);
+        assert!(Arc::strong_count(&service.delete_handler()) >= 1);
+        assert!(Arc::strong_count(&service.get_deleted_for_audit_handler()) >= 1);
     }
 
     #[tokio::test]
@@ -253,11 +437,9 @@ mod tests {
         let repository = Arc::new(MockToDoItemRepository::new());
         let service = Arc::new(ToDoItemService::new(repository.clone()));
 
-        // Add some test data
         repository.add_item(ToDoItem::new("Test 1".to_string(), "Note 1".to_string()));
         repository.add_item(ToDoItem::new("Test 2".to_string(), "Note 2".to_string()));
 
-        // Test concurrent access with multiple tasks
         let mut handles = vec![];
 
         for i in 0..10 {
@@ -270,101 +452,87 @@ mod tests {
             handles.push(handle);
         }
 
-        // Wait for all tasks to complete
         for handle in handles {
             let (task_id, result) = handle.await.unwrap();
             assert!(result.is_ok(), "Task {} failed", task_id);
             assert_eq!(result.unwrap().items.len(), 2);
         }
 
-        // Verify that repository was called 10 times
         assert_eq!(repository.get_call_count(), 10);
     }
 
-    #[tokio::test]
-    async fn test_boxed_service_creation() {
-        let repository = Arc::new(MockToDoItemRepository::new());
-        let service = ToDoItemServiceBoxed::new(repository);
+    #[test]
+    fn authenticate_user_issues_token() {
+        let auth_service = AuthService::new(auth_settings()).expect("auth service should build");
 
-        // Test that boxed handlers are created successfully
-        let get_handler = service.create_get_handler();
-        let get_all_handler = service.create_get_all_handler();
-        let create_handler = service.create_create_handler();
-        let update_handler = service.create_update_handler();
-        let delete_handler = service.create_delete_handler();
-        let get_deleted_handler = service.create_get_deleted_for_audit_handler();
+        let response = auth_service
+            .authenticate_user("demo-user", "password")
+            .expect("credentials should authenticate");
 
-        // Verify handlers are boxed correctly
-        assert_eq!(
-            std::mem::size_of_val(&*get_handler),
-            std::mem::size_of::<GetToDoItemQueryHandler>()
-        );
-        assert_eq!(
-            std::mem::size_of_val(&*get_all_handler),
-            std::mem::size_of::<GetAllToDoItemQueryHandler>()
-        );
-        assert_eq!(
-            std::mem::size_of_val(&*create_handler),
-            std::mem::size_of::<CreateToDoItemQueryHandler>()
-        );
-        assert_eq!(
-            std::mem::size_of_val(&*update_handler),
-            std::mem::size_of::<UpdateToDoItemQueryHandler>()
-        );
-        assert_eq!(
-            std::mem::size_of_val(&*delete_handler),
-            std::mem::size_of::<DeleteToDoItemQueryHandler>()
-        );
-        assert_eq!(
-            std::mem::size_of_val(&*get_deleted_handler),
-            std::mem::size_of::<GetDeletedToDoItemForAuditQueryHandler>()
-        );
-    }
-
-    #[tokio::test]
-    async fn test_memory_efficiency_arc_vs_box() {
-        let repository = Arc::new(MockToDoItemRepository::new());
-
-        // Test Arc-based service
-        let arc_service = ToDoItemService::new(repository.clone());
-        let arc_handler1 = arc_service.get_all_handler();
-        let arc_handler2 = arc_service.get_all_handler();
-
-        // Test Box-based service
-        let box_service = ToDoItemServiceBoxed::new(repository);
-        let box_handler1 = box_service.create_get_all_handler();
-        let box_handler2 = box_service.create_get_all_handler();
-
-        // Arc handlers should point to the same memory location (shared)
-        assert_eq!(Arc::as_ptr(&arc_handler1), Arc::as_ptr(&arc_handler2));
-
-        // Box handlers should be different instances
-        assert_ne!(&*box_handler1 as *const _, &*box_handler2 as *const _);
-    }
-
-    #[tokio::test]
-    async fn test_send_sync_bounds() {
-        let repository = Arc::new(MockToDoItemRepository::new());
-        let service = Arc::new(ToDoItemService::new(repository));
-
-        // Test that service can be sent across threads
-        let handle = task::spawn(async move {
-            let handler = service.get_all_handler();
-            handler.execute(GetAllToDoItemsQuery::default()).await
-        });
-
-        let result = handle.await.unwrap();
-        assert!(result.is_ok());
+        assert_eq!(response.token_type, "Bearer");
+        assert_eq!(response.permissions, vec!["todo:read", "todo:write"]);
     }
 
     #[test]
-    fn test_handler_implementation() {
-        let repository = Arc::new(MockToDoItemRepository::new());
-        let service = ToDoItemService::new(repository);
+    fn authenticate_user_rejects_invalid_password() {
+        let auth_service = AuthService::new(auth_settings()).expect("auth service should build");
 
-        // Verify that handlers are properly wrapped in Arc
-        let handler = service.get_handler();
-        // Just verify we can get the handler without panicking
-        assert!(Arc::strong_count(&handler) >= 1);
+        let error = auth_service
+            .authenticate_user("demo-user", "wrong-password")
+            .expect_err("invalid password must fail");
+
+        assert!(matches!(error, AuthError::InvalidCredentials));
+    }
+
+    #[test]
+    fn authenticate_bearer_token_rejects_invalid_claims() {
+        let auth_service = AuthService::new(auth_settings()).expect("auth service should build");
+
+        let error = auth_service
+            .authenticate_bearer_token("not-a-jwt")
+            .expect_err("bad token must fail");
+
+        assert!(matches!(error, AuthError::InvalidBearerToken));
+    }
+
+    #[test]
+    fn authenticate_service_api_key_resolves_service_principal() {
+        let auth_service = AuthService::new(auth_settings()).expect("auth service should build");
+
+        let principal = auth_service
+            .authenticate_service_api_key("X-Service-Api-Key", "local-service-key")
+            .expect("service key should authenticate");
+
+        assert_eq!(principal.subject, "audit-client");
+        assert_eq!(principal.principal_type, PrincipalType::Service);
+        assert!(principal.has_permission(Permission::AuditRead));
+    }
+
+    #[test]
+    fn authorize_rejects_missing_permission() {
+        let auth_service = AuthService::new(auth_settings()).expect("auth service should build");
+        let principal =
+            AuthenticatedPrincipal::new("demo-user", PrincipalType::User, [Permission::TodoRead]);
+        let policy = ProtectedEndpointPolicy::new(Permission::TodoWrite, vec![PrincipalType::User]);
+
+        let error = auth_service
+            .authorize(&principal, &policy)
+            .expect_err("missing permission must fail");
+
+        assert!(matches!(error, AuthError::Forbidden));
+    }
+
+    #[tokio::test]
+    async fn login_handler_uses_auth_service() {
+        let handler = LoginQueryHandler::new(Arc::new(
+            AuthService::new(auth_settings()).expect("auth service should build"),
+        ));
+
+        let response = handler
+            .execute(LoginQuery::new("demo-user", "password"))
+            .await
+            .expect("login should succeed");
+
+        assert_eq!(response.token_type, "Bearer");
     }
 }

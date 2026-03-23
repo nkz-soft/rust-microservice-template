@@ -17,6 +17,7 @@ utoipa.workspace = true
 utoipa-actix-web.workspace = true
 utoipa-swagger-ui.workspace = true
 chrono.workspace = true
+argon2.workspace = true
 
 application = { path = "../application" }
 presentation = { path = "../presentation" }

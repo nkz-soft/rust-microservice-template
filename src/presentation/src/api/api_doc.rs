@@ -3,8 +3,31 @@ use crate::api::app::__path_delete;
 use crate::api::app::__path_get_all;
 use crate::api::app::__path_get_by_id;
 use crate::api::app::__path_get_deleted_by_id_for_audit;
+use crate::api::app::__path_issue_token;
 use crate::api::app::__path_update;
-use utoipa::OpenApi;
+use utoipa::openapi::security::{ApiKey, ApiKeyValue, HttpAuthScheme, HttpBuilder, SecurityScheme};
+use utoipa::{Modify, OpenApi};
+
+struct SecurityAddon;
+
+impl Modify for SecurityAddon {
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+        let components = openapi.components.get_or_insert_with(Default::default);
+        components.add_security_scheme(
+            "bearerAuth",
+            SecurityScheme::Http(
+                HttpBuilder::new()
+                    .scheme(HttpAuthScheme::Bearer)
+                    .bearer_format("JWT")
+                    .build(),
+            ),
+        );
+        components.add_security_scheme(
+            "serviceApiKey",
+            SecurityScheme::ApiKey(ApiKey::Header(ApiKeyValue::new("X-Service-Api-Key"))),
+        );
+    }
+}
 
 #[derive(OpenApi)]
 #[openapi(
@@ -13,16 +36,19 @@ use utoipa::OpenApi;
         version = "v1"
     ),
     tags(
-            (name = "todo", description = "Todo management endpoints.")
+            (name = "todo", description = "Todo management endpoints."),
+            (name = "auth", description = "Authentication endpoints.")
     ),
     paths(
+        issue_token,
         get_all,
         create,
         update,
         get_by_id,
         delete,
         get_deleted_by_id_for_audit
-    )
+    ),
+    modifiers(&SecurityAddon)
 )]
 pub struct ApiDoc;
 
