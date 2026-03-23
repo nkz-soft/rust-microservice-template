@@ -41,7 +41,7 @@ tracing = "0.1.44"
 
 # Configuration
 dotenv = "0.15.0"
-config = "0.15.21"
+config = "0.15.22"
 
 # Error Handling
 anyhow = "1.0.102"
