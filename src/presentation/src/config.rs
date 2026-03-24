@@ -9,6 +9,7 @@ extern crate application;
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.app_data(json_config());
     cfg.app_data(query_config());
+    cfg.service(api::metrics);
     cfg.service(
         web::scope("/api/v1")
             .service(

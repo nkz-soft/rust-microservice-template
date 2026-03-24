@@ -15,17 +15,18 @@ mod tests {
     use crate::{prepare_test_environment, utils::test_server::TEST_SERVER_ONCE};
 
     const WEB_SERVER_PATH: &str = "http://localhost:8181/api/v1/";
+    const METRICS_PATH: &str = "http://localhost:8181/metrics";
     const AUDIT_TOKEN: &str = "local-audit-token";
 
     #[dtor]
     fn cleanup() {
-        let id = TEST_SERVER_ONCE.get().unwrap().container().id();
-
-        std::process::Command::new("docker")
-            .arg("kill")
-            .arg(id)
-            .output()
-            .expect("failed to kill container");
+        if let Some(server) = TEST_SERVER_ONCE.get() {
+            let id = server.container().id();
+            let _ = std::process::Command::new("docker")
+                .arg("kill")
+                .arg(id)
+                .output();
+        }
     }
 
     #[serial]
@@ -47,12 +48,72 @@ mod tests {
             .expect("Failed to execute request.");
 
         assert!(response.status().is_success());
+        assert!(response.headers().get("x-request-id").is_some());
         let body = response
             .json::<Value>()
             .await
             .expect("Failed to deserialize response.");
         assert!(body.get("items").is_some());
         assert!(body.get("meta").is_some());
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_request_id_is_generated_when_missing() {
+        let client = prepare_test_environment!();
+
+        let response = client
+            .get(WEB_SERVER_PATH.to_owned() + "to-do-items?page=1&page_size=1")
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let request_id = response
+            .headers()
+            .get("x-request-id")
+            .expect("x-request-id header should be set")
+            .to_str()
+            .expect("x-request-id should be ASCII");
+        assert!(!request_id.trim().is_empty());
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_request_id_is_preserved_when_provided() {
+        let client = prepare_test_environment!();
+        let expected_request_id = format!("integration-{}", Uuid::new_v4());
+
+        let response = client
+            .get(WEB_SERVER_PATH.to_owned() + "to-do-items?page=1&page_size=1")
+            .header("X-Request-Id", expected_request_id.clone())
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let actual_request_id = response
+            .headers()
+            .get("x-request-id")
+            .expect("x-request-id header should be set")
+            .to_str()
+            .expect("x-request-id should be ASCII");
+        assert_eq!(actual_request_id, expected_request_id);
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_failed_response_includes_request_id() {
+        let client = prepare_test_environment!();
+
+        let response = client
+            .get(WEB_SERVER_PATH.to_owned() + "to-do-items?page=0&page_size=20")
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        assert!(response.headers().get("x-request-id").is_some());
     }
 
     #[serial]
@@ -848,5 +909,85 @@ mod tests {
             .expect("Failed to execute request.");
 
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_metrics_endpoint_exposes_application_metrics() {
+        let client = prepare_test_environment!();
+
+        let _ = client
+            .get(WEB_SERVER_PATH.to_owned() + "to-do-items?page=1&page_size=5")
+            .send()
+            .await
+            .expect("Failed to execute request.");
+        let _ = client
+            .get(WEB_SERVER_PATH.to_owned() + "to-do-items?page=0&page_size=20")
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        let metrics_response = client
+            .get(METRICS_PATH)
+            .send()
+            .await
+            .expect("Failed to execute request.");
+        assert_eq!(metrics_response.status(), StatusCode::OK);
+
+        let body = metrics_response
+            .text()
+            .await
+            .expect("Failed to read metrics response body.");
+        assert!(body.contains("http_requests_total"));
+        assert!(body.contains("http_request_duration_seconds"));
+        assert!(body.contains("http_request_errors_total"));
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_metrics_scrapes_do_not_increment_business_route_count() {
+        let client = prepare_test_environment!();
+
+        let before = fetch_route_counter(&client, "/api/v1/to-do-items").await;
+
+        let _ = client
+            .get(WEB_SERVER_PATH.to_owned() + "to-do-items?page=1&page_size=5")
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        let after_business_request = fetch_route_counter(&client, "/api/v1/to-do-items").await;
+        assert!(
+            after_business_request > before,
+            "Business route counter should increase after normal API request"
+        );
+
+        let after_metrics_scrape = fetch_route_counter(&client, "/api/v1/to-do-items").await;
+        assert_eq!(
+            after_business_request, after_metrics_scrape,
+            "Scraping /metrics should not alter business route counters"
+        );
+    }
+
+    async fn fetch_route_counter(client: &reqwest::Client, route: &str) -> f64 {
+        let response = client
+            .get(METRICS_PATH)
+            .send()
+            .await
+            .expect("Failed to execute metrics request.");
+        let metrics = response
+            .text()
+            .await
+            .expect("Failed to read metrics response body.");
+
+        metrics
+            .lines()
+            .filter(|line| {
+                line.starts_with("http_requests_total{")
+                    && line.contains(&format!("route=\"{route}\""))
+            })
+            .filter_map(|line| line.split_whitespace().last())
+            .filter_map(|value| value.parse::<f64>().ok())
+            .sum()
     }
 }

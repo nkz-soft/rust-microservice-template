@@ -60,12 +60,11 @@ pub(crate) async fn init() {
 //see https://stackoverflow.com/questions/78969766/how-can-i-call-drop-in-a-tokio-static-oncelock-in-rust
 #[dtor]
 fn cleanup() {
-    //This is crazy but it works
-    let id = TEST_SERVER_ONCE.get().unwrap().container().id();
-
-    std::process::Command::new("docker")
-        .arg("kill")
-        .arg(id)
-        .output()
-        .expect("failed to kill container");
+    if let Some(server) = TEST_SERVER_ONCE.get() {
+        let id = server.container().id();
+        let _ = std::process::Command::new("docker")
+            .arg("kill")
+            .arg(id)
+            .output();
+    }
 }

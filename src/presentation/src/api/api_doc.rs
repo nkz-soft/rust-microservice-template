@@ -1,3 +1,4 @@
+use crate::api::api_metrics::__path_metrics;
 use crate::api::app::__path_create;
 use crate::api::app::__path_delete;
 use crate::api::app::__path_get_all;
@@ -21,7 +22,8 @@ use utoipa::OpenApi;
         update,
         get_by_id,
         delete,
-        get_deleted_by_id_for_audit
+        get_deleted_by_id_for_audit,
+        metrics
     )
 )]
 pub struct ApiDoc;
@@ -48,5 +50,27 @@ mod tests {
             .expect("search parameter should have a description");
         assert!(description.contains("title and note"));
         assert!(description.contains("Blank values are rejected"));
+    }
+
+    #[test]
+    fn openapi_documents_request_id_response_description() {
+        let openapi = ApiDoc::openapi();
+        let openapi_json = serde_json::to_value(&openapi).expect("OpenAPI should serialize");
+        let description = openapi_json["paths"]["/api/v1/to-do-items"]["get"]["responses"]["200"]
+            ["description"]
+            .as_str()
+            .expect("response description should exist");
+
+        assert!(description.contains("X-Request-Id"));
+    }
+
+    #[test]
+    fn openapi_includes_metrics_endpoint() {
+        let openapi = ApiDoc::openapi();
+        let openapi_json = serde_json::to_value(&openapi).expect("OpenAPI should serialize");
+        assert_eq!(
+            openapi_json["paths"]["/metrics"]["get"]["summary"],
+            Value::String("Exposes Prometheus-compatible runtime metrics.".to_string())
+        );
     }
 }

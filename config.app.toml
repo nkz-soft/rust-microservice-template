@@ -7,3 +7,9 @@ database_url = 'postgres://postgres:postgres@localhost:5432/rust_template_db'
 
 [audit]
 token = 'local-audit-token'
+
+[observability]
+log_level = 'info'
+request_id_header = 'x-request-id'
+metrics_enabled = true
+metrics_path = '/metrics'
