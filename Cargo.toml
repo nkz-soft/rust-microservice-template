@@ -38,6 +38,10 @@ diesel_migrations = "2.3.1"
 log = "0.4.29"
 env_logger = "0.11.9"
 tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.20", features = ["env-filter", "fmt", "json"] }
+tracing-actix-web = "0.7.19"
+metrics = "0.24.2"
+metrics-exporter-prometheus = "0.17.2"
 
 # Configuration
 dotenv = "0.15.0"

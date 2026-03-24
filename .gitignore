@@ -92,3 +92,9 @@ tests/rustdoc-gui/src/**.lock
 
 # Legacy local Spec Kit output
 .codex/
+
+# Observability and local runtime artifacts
+.env*
+*.log
+debug/
+release/

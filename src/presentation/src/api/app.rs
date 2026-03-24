@@ -25,8 +25,8 @@ const TODO: &str = "todo";
     context_path = "/api/v1/to-do-items",
     tag = TODO,
     responses(
-        (status = 200, description = "List active to-do items filtered by the optional search term", body = ToDoItemsPageResponse),
-        (status = 400, description = "Validation error for blank or malformed query parameters", body = ProblemDetailsResponse)
+        (status = 200, description = "List active to-do items filtered by the optional search term. Responses include X-Request-Id.", body = ToDoItemsPageResponse),
+        (status = 400, description = "Validation error for blank or malformed query parameters. Responses include X-Request-Id.", body = ProblemDetailsResponse)
     ),
     params(GetAllToDoItemsQueryRequest)
 )]
@@ -50,7 +50,7 @@ pub async fn get_all(
     context_path = "/api/v1/to-do-items",
     tag = TODO,
     responses(
-        (status = 200, description = "Get todo item by id", body = ToDoItemResponse)
+        (status = 200, description = "Get todo item by id. Responses include X-Request-Id.", body = ToDoItemResponse)
     ),
     params(
         ("id" = Uuid, Path, description = "Id of the to-do item")
@@ -76,8 +76,8 @@ pub async fn get_by_id(
     context_path = "/api/v1/to-do-items",
     tag = TODO,
     responses(
-        (status = 201, description = "Create todo item", body = Uuid),
-        (status = 400, description = "Validation error", body = ProblemDetailsResponse)
+        (status = 201, description = "Create todo item. Responses include X-Request-Id.", body = Uuid),
+        (status = 400, description = "Validation error. Responses include X-Request-Id.", body = ProblemDetailsResponse)
     ),
     request_body = CreateToDoItemRequest,
 )]
@@ -98,10 +98,10 @@ pub async fn create(
     context_path = "/api/v1/to-do-items",
     tag = TODO,
     responses(
-        (status = 200, description = "Update todo item"),
-        (status = 400, description = "Validation error", body = ProblemDetailsResponse),
-        (status = 412, description = "Stale If-Match precondition", body = ProblemDetailsResponse),
-        (status = 428, description = "Missing If-Match precondition", body = ProblemDetailsResponse)
+        (status = 200, description = "Update todo item. Responses include X-Request-Id."),
+        (status = 400, description = "Validation error. Responses include X-Request-Id.", body = ProblemDetailsResponse),
+        (status = 412, description = "Stale If-Match precondition. Responses include X-Request-Id.", body = ProblemDetailsResponse),
+        (status = 428, description = "Missing If-Match precondition. Responses include X-Request-Id.", body = ProblemDetailsResponse)
     ),
     params(
         ("id", description = "Id of the to-do item to update")
@@ -132,7 +132,7 @@ pub async fn update(
     context_path = "/api/v1/to-do-items",
     tag = TODO,
     responses(
-        (status = 200, description = "Delete todo item")
+        (status = 200, description = "Delete todo item. Responses include X-Request-Id.")
     ),
     params(
         ("id", description = "Id of the to-do item to delete")
@@ -159,9 +159,9 @@ pub async fn delete(
     context_path = "/api/v1/audit/to-do-items",
     tag = TODO,
     responses(
-        (status = 200, description = "Get deleted todo item by id for audit", body = AuditToDoItemResponse),
-        (status = 401, description = "Missing or invalid audit token", body = ProblemDetailsResponse),
-        (status = 404, description = "Deleted todo item not found", body = ProblemDetailsResponse)
+        (status = 200, description = "Get deleted todo item by id for audit. Responses include X-Request-Id.", body = AuditToDoItemResponse),
+        (status = 401, description = "Missing or invalid audit token. Responses include X-Request-Id.", body = ProblemDetailsResponse),
+        (status = 404, description = "Deleted todo item not found. Responses include X-Request-Id.", body = ProblemDetailsResponse)
     ),
     params(
         ("id" = Uuid, Path, description = "Id of the deleted to-do item"),

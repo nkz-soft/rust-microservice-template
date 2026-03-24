@@ -11,6 +11,7 @@ pub struct Settings {
     pub service: Service,
     pub database: Database,
     pub audit: Audit,
+    pub observability: Observability,
     #[serde(skip)]
     path: Option<PathBuf>,
 }
@@ -34,6 +35,15 @@ pub struct Audit {
     pub token: Option<String>,
 }
 
+#[readonly::make]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Observability {
+    pub log_level: String,
+    pub request_id_header: String,
+    pub metrics_enabled: bool,
+    pub metrics_path: String,
+}
+
 impl Default for Settings {
     fn default() -> Self {
         Self {
@@ -45,6 +55,12 @@ impl Default for Settings {
                 database_url: "postgres://postgres:postgres@localhost:5432/rust_template_db".into(),
             },
             audit: Audit { token: None },
+            observability: Observability {
+                log_level: "info".into(),
+                request_id_header: "x-request-id".into(),
+                metrics_enabled: true,
+                metrics_path: "/metrics".into(),
+            },
             path: Some(PathBuf::from(".")),
         }
     }
@@ -63,7 +79,23 @@ impl Settings {
             .set_default("service.http_url", self.service.http_url.clone())?
             .set_default("service.service_name", self.service.service_name.clone())?
             .set_default("database.database_url", self.database.database_url.clone())?
-            .set_default("audit.token", self.audit.token.clone())?;
+            .set_default("audit.token", self.audit.token.clone())?
+            .set_default(
+                "observability.log_level",
+                self.observability.log_level.clone(),
+            )?
+            .set_default(
+                "observability.request_id_header",
+                self.observability.request_id_header.clone(),
+            )?
+            .set_default(
+                "observability.metrics_enabled",
+                self.observability.metrics_enabled,
+            )?
+            .set_default(
+                "observability.metrics_path",
+                self.observability.metrics_path.clone(),
+            )?;
 
         if let Some(path) = &self.path {
             let config_path = path.join(CONFIG_FILE_NAME);
@@ -108,6 +140,10 @@ mod tests {
             "postgres://postgres:postgres@localhost:5432/rust_template_db"
         );
         assert_eq!(settings.audit.token, Some("local-audit-token".to_string()));
+        assert_eq!(settings.observability.log_level, "info");
+        assert_eq!(settings.observability.request_id_header, "x-request-id");
+        assert!(settings.observability.metrics_enabled);
+        assert_eq!(settings.observability.metrics_path, "/metrics");
     }
 
     #[serial]
@@ -119,6 +155,13 @@ mod tests {
             "postgres://postgres1:postgres1@localhost:5432/rust_template_db",
         );
         env::set_var("MICROSERVICE__AUDIT__TOKEN", "env-audit-token");
+        env::set_var("MICROSERVICE__OBSERVABILITY__LOG_LEVEL", "debug");
+        env::set_var(
+            "MICROSERVICE__OBSERVABILITY__REQUEST_ID_HEADER",
+            "x-correlation-id",
+        );
+        env::set_var("MICROSERVICE__OBSERVABILITY__METRICS_ENABLED", "false");
+        env::set_var("MICROSERVICE__OBSERVABILITY__METRICS_PATH", "/prom-metrics");
         let settings = Settings::with_path("./../../").load().unwrap();
         assert_eq!(settings.service.http_url, "localhost:8080");
         assert_eq!(
@@ -126,9 +169,17 @@ mod tests {
             "postgres://postgres1:postgres1@localhost:5432/rust_template_db"
         );
         assert_eq!(settings.audit.token, Some("env-audit-token".to_string()));
+        assert_eq!(settings.observability.log_level, "debug");
+        assert_eq!(settings.observability.request_id_header, "x-correlation-id");
+        assert!(!settings.observability.metrics_enabled);
+        assert_eq!(settings.observability.metrics_path, "/prom-metrics");
         env::remove_var("MICROSERVICE__SERVICE__HTTP_URL");
         env::remove_var("MICROSERVICE__DATABASE__DATABASE_URL");
         env::remove_var("MICROSERVICE__AUDIT__TOKEN");
+        env::remove_var("MICROSERVICE__OBSERVABILITY__LOG_LEVEL");
+        env::remove_var("MICROSERVICE__OBSERVABILITY__REQUEST_ID_HEADER");
+        env::remove_var("MICROSERVICE__OBSERVABILITY__METRICS_ENABLED");
+        env::remove_var("MICROSERVICE__OBSERVABILITY__METRICS_PATH");
     }
 
     #[serial]
@@ -147,6 +198,10 @@ mod tests {
             "postgres://postgres:postgres@localhost:5432/rust_template_db"
         );
         assert_eq!(settings.audit.token, None);
+        assert_eq!(settings.observability.log_level, "info");
+        assert_eq!(settings.observability.request_id_header, "x-request-id");
+        assert!(settings.observability.metrics_enabled);
+        assert_eq!(settings.observability.metrics_path, "/metrics");
 
         env::remove_var("MICROSERVICE__SERVICE__HTTP_URL");
     }
@@ -163,5 +218,18 @@ mod tests {
         assert_eq!(settings.audit.token, Some("audit-only-env".to_string()));
 
         env::remove_var("MICROSERVICE__AUDIT__TOKEN");
+    }
+
+    #[serial]
+    #[test]
+    fn observability_defaults_are_loaded_without_file_test() {
+        let settings = Settings::with_path("./definitely-missing-config-dir/")
+            .load()
+            .unwrap();
+
+        assert_eq!(settings.observability.log_level, "info");
+        assert_eq!(settings.observability.request_id_header, "x-request-id");
+        assert!(settings.observability.metrics_enabled);
+        assert_eq!(settings.observability.metrics_path, "/metrics");
     }
 }
