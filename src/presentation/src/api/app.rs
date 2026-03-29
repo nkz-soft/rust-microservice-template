@@ -50,7 +50,9 @@ pub async fn get_all(
     context_path = "/api/v1/to-do-items",
     tag = TODO,
     responses(
-        (status = 200, description = "Get todo item by id. Responses include X-Request-Id.", body = ToDoItemResponse)
+        (status = 200, description = "Get todo item by id. Responses include X-Request-Id.", body = ToDoItemResponse),
+        (status = 404, description = "Todo item not found. Responses include X-Request-Id.", body = ProblemDetailsResponse),
+        (status = 500, description = "Unexpected internal error. Responses include X-Request-Id.", body = ProblemDetailsResponse)
     ),
     params(
         ("id" = Uuid, Path, description = "Id of the to-do item")
@@ -100,8 +102,10 @@ pub async fn create(
     responses(
         (status = 200, description = "Update todo item. Responses include X-Request-Id."),
         (status = 400, description = "Validation error. Responses include X-Request-Id.", body = ProblemDetailsResponse),
+        (status = 404, description = "Todo item not found. Responses include X-Request-Id.", body = ProblemDetailsResponse),
         (status = 412, description = "Stale If-Match precondition. Responses include X-Request-Id.", body = ProblemDetailsResponse),
-        (status = 428, description = "Missing If-Match precondition. Responses include X-Request-Id.", body = ProblemDetailsResponse)
+        (status = 428, description = "Missing If-Match precondition. Responses include X-Request-Id.", body = ProblemDetailsResponse),
+        (status = 500, description = "Unexpected internal error. Responses include X-Request-Id.", body = ProblemDetailsResponse)
     ),
     params(
         ("id", description = "Id of the to-do item to update")
@@ -132,7 +136,8 @@ pub async fn update(
     context_path = "/api/v1/to-do-items",
     tag = TODO,
     responses(
-        (status = 200, description = "Delete todo item. Responses include X-Request-Id.")
+        (status = 200, description = "Delete todo item. Responses include X-Request-Id."),
+        (status = 500, description = "Unexpected internal error. Responses include X-Request-Id.", body = ProblemDetailsResponse)
     ),
     params(
         ("id", description = "Id of the to-do item to delete")
@@ -161,7 +166,8 @@ pub async fn delete(
     responses(
         (status = 200, description = "Get deleted todo item by id for audit. Responses include X-Request-Id.", body = AuditToDoItemResponse),
         (status = 401, description = "Missing or invalid audit token. Responses include X-Request-Id.", body = ProblemDetailsResponse),
-        (status = 404, description = "Deleted todo item not found. Responses include X-Request-Id.", body = ProblemDetailsResponse)
+        (status = 404, description = "Deleted todo item not found. Responses include X-Request-Id.", body = ProblemDetailsResponse),
+        (status = 500, description = "Unexpected internal error. Responses include X-Request-Id.", body = ProblemDetailsResponse)
     ),
     params(
         ("id" = Uuid, Path, description = "Id of the deleted to-do item"),

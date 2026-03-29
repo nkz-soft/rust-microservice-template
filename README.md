@@ -266,6 +266,13 @@ Swagger UI is available at `GET /api/v1/swagger-ui/` and OpenAPI JSON at `GET /a
 
 Validation and request parsing errors are returned as problem-details responses, giving clients a structured `400 Bad Request` payload instead of ad hoc text errors.
 
+Normal request flow now uses explicit application-layer error categories instead of cross-layer `anyhow` propagation.
+
+- `404 Not Found` is returned for missing to-do items.
+- `412 Precondition Failed` is returned for optimistic concurrency conflicts.
+- `500 Internal Server Error` is sanitized to a stable generic problem-details response and does not expose database or driver internals.
+- `anyhow` remains appropriate for startup and outer composition boundaries, not for normal repository, handler, or HTTP error contracts.
+
 ### Observability
 
 The service emits structured request traces and includes `X-Request-Id` on HTTP responses.

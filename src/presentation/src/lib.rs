@@ -6,3 +6,4 @@ mod responses;
 
 pub use api::ApiDoc;
 pub use config::configure;
+pub use errors::HttpError;

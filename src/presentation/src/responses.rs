@@ -120,6 +120,8 @@ impl From<PaginatedResult<ToDoItem>> for ToDoItemsPageResponse {
 #[readonly::make]
 #[derive(Deserialize, Serialize, ToSchema)]
 pub struct ProblemDetailsResponse {
+    /// Short, human-readable summary of the problem type.
+    pub title: Option<String>,
     /// HTTP status code.
     pub status: u16,
     /// Human-readable explanation specific to this occurrence of the problem.

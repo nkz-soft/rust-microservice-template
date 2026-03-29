@@ -1,5 +1,6 @@
 use crate::queries::*;
 use crate::repositories::*;
+use crate::ApplicationResult;
 use domain::ToDoItem;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -13,7 +14,7 @@ impl GetToDoItemQueryHandler {
         GetToDoItemQueryHandler { repository }
     }
 
-    pub async fn execute(&self, query: GetToDoItemQuery) -> anyhow::Result<ToDoItem> {
+    pub async fn execute(&self, query: GetToDoItemQuery) -> ApplicationResult<ToDoItem> {
         self.repository.get_by_id(query.id.unwrap()).await
     }
 }
@@ -32,7 +33,7 @@ impl GetAllToDoItemQueryHandler {
     pub async fn execute(
         &self,
         query: GetAllToDoItemsQuery,
-    ) -> anyhow::Result<PaginatedResult<ToDoItem>> {
+    ) -> ApplicationResult<PaginatedResult<ToDoItem>> {
         self.repository.get_all(query).await
     }
 }
@@ -48,7 +49,7 @@ impl CreateToDoItemQueryHandler {
         CreateToDoItemQueryHandler { repository }
     }
 
-    pub async fn execute(&self, query: CreateToDoItemQuery) -> anyhow::Result<Uuid> {
+    pub async fn execute(&self, query: CreateToDoItemQuery) -> ApplicationResult<Uuid> {
         self.repository
             .create(ToDoItem::new_with_lifecycle(
                 query.title,
@@ -71,7 +72,7 @@ impl UpdateToDoItemQueryHandler {
         UpdateToDoItemQueryHandler { repository }
     }
 
-    pub async fn execute(&self, query: UpdateToDoItemQuery) -> anyhow::Result<Uuid> {
+    pub async fn execute(&self, query: UpdateToDoItemQuery) -> ApplicationResult<Uuid> {
         self.repository
             .update(ToDoItem::new_versioned(
                 query.id,
@@ -96,7 +97,7 @@ impl DeleteToDoItemQueryHandler {
         DeleteToDoItemQueryHandler { repository }
     }
 
-    pub async fn execute(&self, query: DeleteToDoItemQuery) -> anyhow::Result<()> {
+    pub async fn execute(&self, query: DeleteToDoItemQuery) -> ApplicationResult<()> {
         self.repository.delete(query.id, query.deleted_by).await
     }
 }
@@ -115,7 +116,7 @@ impl GetDeletedToDoItemForAuditQueryHandler {
     pub async fn execute(
         &self,
         query: GetDeletedToDoItemForAuditQuery,
-    ) -> anyhow::Result<ToDoItem> {
+    ) -> ApplicationResult<ToDoItem> {
         self.repository.get_deleted_by_id_for_audit(query.id).await
     }
 }
