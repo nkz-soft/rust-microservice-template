@@ -434,6 +434,12 @@ mod tests {
             .expect("Failed to execute request.");
 
         assert_eq!(update_response.status(), StatusCode::NOT_FOUND);
+        let body = update_response
+            .json::<Value>()
+            .await
+            .expect("Failed to deserialize response.");
+        assert_eq!(body["status"], json!(404));
+        assert_eq!(body["title"], "Not Found");
     }
 
     #[serial]
@@ -685,6 +691,33 @@ mod tests {
             .await
             .expect("Failed to deserialize response.");
         assert_eq!(body["status"], json!(412));
+        assert_eq!(body["title"], "Precondition Failed");
+        assert!(body["detail"].as_str().unwrap().contains("stale version"));
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_get_by_id_missing_item_returns_problem_details() {
+        let client = prepare_test_environment!();
+        let missing_id = Uuid::new_v4();
+
+        let response = client
+            .get(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{missing_id}").as_str())
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        let body = response
+            .json::<Value>()
+            .await
+            .expect("Failed to deserialize response.");
+        assert_eq!(body["status"], json!(404));
+        assert_eq!(body["title"], "Not Found");
+        assert!(body["detail"]
+            .as_str()
+            .expect("detail should be present")
+            .contains(&missing_id.to_string()));
     }
 
     #[serial]

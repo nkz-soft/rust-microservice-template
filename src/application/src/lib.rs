@@ -1,4 +1,5 @@
 mod dtos;
+mod errors;
 mod handlers;
 mod mappers;
 mod queries;
@@ -7,6 +8,7 @@ mod services;
 mod settings;
 
 pub use crate::settings::{Audit, Settings};
+pub use errors::{ApplicationError, ApplicationResult};
 
 pub use crate::repositories::ToDoItemRepository;
 

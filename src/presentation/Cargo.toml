@@ -12,7 +12,6 @@ serde_json.workspace = true
 readonly.workspace = true
 uuid.workspace = true
 utoipa.workspace = true
-anyhow.workspace = true
 problem_details.workspace = true
 http.workspace = true
 diesel.workspace = true

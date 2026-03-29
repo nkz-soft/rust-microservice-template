@@ -1,6 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use application::{GetAllToDoItemsQuery, PaginatedResult, ToDoItemRepository, ToDoItemService};
+    use application::{
+        ApplicationError, ApplicationResult, GetAllToDoItemsQuery, PaginatedResult,
+        ToDoItemRepository, ToDoItemService,
+    };
     use domain::ToDoItem;
     use std::sync::{Arc, Mutex};
     use std::time::Duration;
@@ -35,7 +38,7 @@ mod tests {
         async fn get_all(
             &self,
             query: GetAllToDoItemsQuery,
-        ) -> anyhow::Result<PaginatedResult<ToDoItem>> {
+        ) -> ApplicationResult<PaginatedResult<ToDoItem>> {
             *self.operation_count.lock().unwrap() += 1;
             sleep(Duration::from_millis(10)).await; // Simulate some work
             let items = self.items.lock().unwrap().clone();
@@ -54,7 +57,7 @@ mod tests {
             ))
         }
 
-        async fn get_by_id(&self, id: Uuid) -> anyhow::Result<ToDoItem> {
+        async fn get_by_id(&self, id: Uuid) -> ApplicationResult<ToDoItem> {
             *self.operation_count.lock().unwrap() += 1;
             sleep(Duration::from_millis(10)).await; // Simulate some work
             self.items
@@ -63,10 +66,10 @@ mod tests {
                 .iter()
                 .find(|item| item.id == id)
                 .cloned()
-                .ok_or_else(|| anyhow::anyhow!("Item not found"))
+                .ok_or(ApplicationError::NotFound { id })
         }
 
-        async fn create(&self, entity: ToDoItem) -> anyhow::Result<Uuid> {
+        async fn create(&self, entity: ToDoItem) -> ApplicationResult<Uuid> {
             *self.operation_count.lock().unwrap() += 1;
             sleep(Duration::from_millis(10)).await; // Simulate some work
             let id = entity.id;
@@ -76,7 +79,7 @@ mod tests {
             Ok(id)
         }
 
-        async fn update(&self, entity: ToDoItem) -> anyhow::Result<Uuid> {
+        async fn update(&self, entity: ToDoItem) -> ApplicationResult<Uuid> {
             *self.operation_count.lock().unwrap() += 1;
             sleep(Duration::from_millis(10)).await; // Simulate some work
             let id = entity.id;
@@ -85,10 +88,14 @@ mod tests {
             let existing = items
                 .iter_mut()
                 .find(|item| item.id == id)
-                .ok_or_else(|| anyhow::anyhow!("Item not found"))?;
+                .ok_or(ApplicationError::NotFound { id })?;
 
             if existing.version != entity.version {
-                return Err(anyhow::anyhow!("Version conflict"));
+                return Err(ApplicationError::Conflict {
+                    id,
+                    expected_version: entity.version,
+                    actual_version: existing.version,
+                });
             }
 
             existing.title = entity.title;
@@ -98,7 +105,7 @@ mod tests {
             Ok(id)
         }
 
-        async fn delete(&self, id: Uuid, _deleted_by: Option<Uuid>) -> anyhow::Result<()> {
+        async fn delete(&self, id: Uuid, _deleted_by: Option<Uuid>) -> ApplicationResult<()> {
             *self.operation_count.lock().unwrap() += 1;
             sleep(Duration::from_millis(10)).await; // Simulate some work
             let mut items = self.items.lock().unwrap();
@@ -106,7 +113,7 @@ mod tests {
             Ok(())
         }
 
-        async fn get_deleted_by_id_for_audit(&self, id: Uuid) -> anyhow::Result<ToDoItem> {
+        async fn get_deleted_by_id_for_audit(&self, id: Uuid) -> ApplicationResult<ToDoItem> {
             *self.operation_count.lock().unwrap() += 1;
             sleep(Duration::from_millis(10)).await; // Simulate some work
             self.items
@@ -115,7 +122,7 @@ mod tests {
                 .iter()
                 .find(|item| item.id == id && item.deleted_at.is_some())
                 .cloned()
-                .ok_or_else(|| anyhow::anyhow!("Item not found"))
+                .ok_or(ApplicationError::NotFound { id })
         }
     }
 

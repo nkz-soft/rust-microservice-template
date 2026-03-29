@@ -255,6 +255,7 @@ dependencies = [
  "readonly",
  "serde",
  "serial_test",
+ "thiserror 2.0.18",
  "tokio",
  "tokio-postgres",
  "uuid",
@@ -2489,7 +2490,6 @@ name = "presentation"
 version = "0.2.4"
 dependencies = [
  "actix-web",
- "anyhow",
  "application",
  "chrono",
  "diesel",

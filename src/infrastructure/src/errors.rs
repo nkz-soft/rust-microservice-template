@@ -1,3 +1,4 @@
+use application::ApplicationError;
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -15,4 +16,22 @@ pub enum Error {
 
     #[error("internal error: {0}")]
     InternalError(String),
+}
+
+impl From<Error> for ApplicationError {
+    fn from(value: Error) -> Self {
+        match value {
+            Error::ItemNotFound { id } => ApplicationError::NotFound { id },
+            Error::VersionConflict {
+                id,
+                expected_version,
+                actual_version,
+            } => ApplicationError::Conflict {
+                id,
+                expected_version,
+                actual_version,
+            },
+            Error::InternalError(message) => ApplicationError::internal(message),
+        }
+    }
 }

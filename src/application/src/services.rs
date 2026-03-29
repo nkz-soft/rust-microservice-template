@@ -94,7 +94,7 @@ impl ToDoItemServiceBoxed {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{GetAllToDoItemsQuery, PaginatedResult};
+    use crate::{ApplicationError, ApplicationResult, GetAllToDoItemsQuery, PaginatedResult};
     use async_trait::async_trait;
     use domain::ToDoItem;
     use std::sync::{Arc, Mutex};
@@ -129,7 +129,7 @@ mod tests {
         async fn get_all(
             &self,
             query: GetAllToDoItemsQuery,
-        ) -> anyhow::Result<PaginatedResult<ToDoItem>> {
+        ) -> ApplicationResult<PaginatedResult<ToDoItem>> {
             *self.call_count.lock().unwrap() += 1;
             let items = self.items.lock().unwrap().clone();
             let total_items = items.len() as i64;
@@ -147,7 +147,7 @@ mod tests {
             ))
         }
 
-        async fn get_by_id(&self, id: Uuid) -> anyhow::Result<ToDoItem> {
+        async fn get_by_id(&self, id: Uuid) -> ApplicationResult<ToDoItem> {
             *self.call_count.lock().unwrap() += 1;
             self.items
                 .lock()
@@ -155,27 +155,31 @@ mod tests {
                 .iter()
                 .find(|item| item.id == id)
                 .cloned()
-                .ok_or_else(|| anyhow::anyhow!("Item not found"))
+                .ok_or(ApplicationError::NotFound { id })
         }
 
-        async fn create(&self, entity: ToDoItem) -> anyhow::Result<Uuid> {
+        async fn create(&self, entity: ToDoItem) -> ApplicationResult<Uuid> {
             *self.call_count.lock().unwrap() += 1;
             let id = entity.id;
             self.items.lock().unwrap().push(entity);
             Ok(id)
         }
 
-        async fn update(&self, entity: ToDoItem) -> anyhow::Result<Uuid> {
+        async fn update(&self, entity: ToDoItem) -> ApplicationResult<Uuid> {
             *self.call_count.lock().unwrap() += 1;
             let id = entity.id;
             let mut items = self.items.lock().unwrap();
             let existing = items
                 .iter_mut()
                 .find(|item| item.id == id)
-                .ok_or_else(|| anyhow::anyhow!("Item not found"))?;
+                .ok_or(ApplicationError::NotFound { id })?;
 
             if existing.version != entity.version {
-                return Err(anyhow::anyhow!("Version conflict"));
+                return Err(ApplicationError::Conflict {
+                    id,
+                    expected_version: entity.version,
+                    actual_version: existing.version,
+                });
             }
 
             existing.title = entity.title;
@@ -188,14 +192,14 @@ mod tests {
             Ok(id)
         }
 
-        async fn delete(&self, id: Uuid, _deleted_by: Option<Uuid>) -> anyhow::Result<()> {
+        async fn delete(&self, id: Uuid, _deleted_by: Option<Uuid>) -> ApplicationResult<()> {
             *self.call_count.lock().unwrap() += 1;
             let mut items = self.items.lock().unwrap();
             items.retain(|item| item.id != id);
             Ok(())
         }
 
-        async fn get_deleted_by_id_for_audit(&self, id: Uuid) -> anyhow::Result<ToDoItem> {
+        async fn get_deleted_by_id_for_audit(&self, id: Uuid) -> ApplicationResult<ToDoItem> {
             *self.call_count.lock().unwrap() += 1;
             self.items
                 .lock()
@@ -203,7 +207,7 @@ mod tests {
                 .iter()
                 .find(|item| item.id == id && item.deleted_at.is_some())
                 .cloned()
-                .ok_or_else(|| anyhow::anyhow!("Item not found"))
+                .ok_or(ApplicationError::NotFound { id })
         }
     }
 
@@ -355,6 +359,48 @@ mod tests {
 
         let result = handle.await.unwrap();
         assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn get_handler_propagates_typed_not_found_errors() {
+        let repository = Arc::new(MockToDoItemRepository::new());
+        let service = ToDoItemService::new(repository);
+
+        let result = service
+            .get_handler()
+            .execute(crate::GetToDoItemQuery::new(Some(Uuid::new_v4())))
+            .await;
+
+        assert!(matches!(result, Err(ApplicationError::NotFound { .. })));
+    }
+
+    #[tokio::test]
+    async fn update_handler_propagates_typed_conflict_errors() {
+        let repository = Arc::new(MockToDoItemRepository::new());
+        let existing = ToDoItem::new("Title".to_string(), "Note".to_string());
+        let id = existing.id;
+        repository.add_item(existing);
+        let service = ToDoItemService::new(repository);
+
+        let result = service
+            .update_handler()
+            .execute(crate::UpdateToDoItemQuery::new(
+                id,
+                &"Updated".to_string(),
+                &"Updated note".to_string(),
+                "pending",
+                None,
+                99,
+            ))
+            .await;
+
+        assert!(matches!(
+            result,
+            Err(ApplicationError::Conflict {
+                expected_version: 99,
+                ..
+            })
+        ));
     }
 
     #[test]
