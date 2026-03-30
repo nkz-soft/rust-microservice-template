@@ -189,6 +189,35 @@ mod tests {
 
     #[serial]
     #[tokio::test]
+    async fn test_create_returns_command_acknowledgement_not_read_model() {
+        let client = prepare_test_environment!();
+
+        let response = client
+            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
+            .json(&json!({
+                "title": "command-contract",
+                "note": "write payload",
+                "status": "pending"
+            }))
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+        let body = response
+            .json::<Value>()
+            .await
+            .expect("Failed to deserialize response.");
+        assert!(
+            body.is_string(),
+            "create should return an identifier acknowledgement"
+        );
+        assert!(body.get("title").is_none());
+        assert!(body.get("meta").is_none());
+    }
+
+    #[serial]
+    #[tokio::test]
     async fn test_create_populates_lifecycle_metadata() {
         let client = prepare_test_environment!();
 
@@ -759,6 +788,43 @@ mod tests {
 
     #[serial]
     #[tokio::test]
+    async fn test_query_contract_returns_read_model_with_metadata() {
+        let client = prepare_test_environment!();
+
+        let create_response = client
+            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
+            .json(&json!({
+                "title": "query-contract",
+                "note": "visible in read model",
+                "status": "pending"
+            }))
+            .send()
+            .await
+            .expect("Failed to execute request.");
+        assert_eq!(create_response.status(), StatusCode::CREATED);
+
+        let response = client
+            .get(
+                WEB_SERVER_PATH.to_owned()
+                    + "to-do-items?page=1&page_size=10&search=query-contract",
+            )
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response
+            .json::<Value>()
+            .await
+            .expect("Failed to deserialize response.");
+        assert!(body["items"].is_array());
+        assert!(body["meta"].is_object());
+        assert!(body.get("title").is_none());
+        assert!(body.get("status").is_none());
+    }
+
+    #[serial]
+    #[tokio::test]
     async fn test_get_all_search_matches_title_and_excludes_non_matches() {
         let client = prepare_test_environment!();
         let matching_title = format!("milk-title-{}", Uuid::new_v4());
@@ -922,6 +988,97 @@ mod tests {
             .expect("Failed to execute request.");
 
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_command_flow_regression_is_independently_verifiable() {
+        let client = prepare_test_environment!();
+
+        let id = client
+            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
+            .json(&json!({
+                "title": "command-flow",
+                "note": "write path",
+                "status": "pending"
+            }))
+            .send()
+            .await
+            .expect("Failed to execute request.")
+            .json::<Uuid>()
+            .await
+            .expect("Failed to deserialize response.");
+
+        let update_response = client
+            .put(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
+            .header("If-Match", "\"1\"")
+            .json(&json!({
+                "title": "command-flow-updated",
+                "note": "write path updated",
+                "status": "done"
+            }))
+            .send()
+            .await
+            .expect("Failed to execute request.");
+        assert_eq!(update_response.status(), StatusCode::OK);
+
+        let delete_response = client
+            .delete(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
+            .send()
+            .await
+            .expect("Failed to execute request.");
+        assert_eq!(delete_response.status(), StatusCode::OK);
+    }
+
+    #[serial]
+    #[tokio::test]
+    async fn test_query_flow_regression_is_independently_verifiable() {
+        let client = prepare_test_environment!();
+        let actor_id = Uuid::new_v4();
+
+        let id = client
+            .post(WEB_SERVER_PATH.to_owned() + "to-do-items")
+            .json(&json!({
+                "title": "query-flow",
+                "note": "query path",
+                "status": "pending"
+            }))
+            .send()
+            .await
+            .expect("Failed to execute request.")
+            .json::<Uuid>()
+            .await
+            .expect("Failed to deserialize response.");
+
+        let detail_response = client
+            .get(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
+            .send()
+            .await
+            .expect("Failed to execute request.");
+        assert_eq!(detail_response.status(), StatusCode::OK);
+
+        let list_response = client
+            .get(WEB_SERVER_PATH.to_owned() + "to-do-items?page=1&page_size=10&search=query-flow")
+            .send()
+            .await
+            .expect("Failed to execute request.");
+        assert_eq!(list_response.status(), StatusCode::OK);
+
+        let delete_response = client
+            .delete(WEB_SERVER_PATH.to_owned() + format!("to-do-items/{id}").as_str())
+            .header("X-Actor-Id", actor_id.to_string())
+            .send()
+            .await
+            .expect("Failed to execute request.");
+        assert_eq!(delete_response.status(), StatusCode::OK);
+
+        let audit_response = client
+            .get(WEB_SERVER_PATH.to_owned() + format!("audit/to-do-items/{id}").as_str())
+            .header("X-Audit-Token", AUDIT_TOKEN)
+            .send()
+            .await
+            .expect("Failed to execute request.");
+        assert_eq!(audit_response.status(), StatusCode::OK);
     }
 
     #[serial]

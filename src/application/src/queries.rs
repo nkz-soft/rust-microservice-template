@@ -1,4 +1,3 @@
-use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -93,79 +92,18 @@ impl<T> PaginatedResult<T> {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GetToDoItemQuery {
-    pub id: Option<Uuid>,
+    pub id: Uuid,
 }
 
 impl GetToDoItemQuery {
-    pub fn new(id: Option<Uuid>) -> Self {
-        GetToDoItemQuery { id }
+    pub fn new(id: Uuid) -> Self {
+        Self { id }
     }
 }
 
-pub struct CreateToDoItemQuery {
-    pub title: String,
-    pub note: String,
-    pub status: String,
-    pub due_at: Option<DateTime<Utc>>,
-}
-
-impl CreateToDoItemQuery {
-    pub fn new(
-        title: &String,
-        note: &String,
-        status: impl Into<String>,
-        due_at: Option<DateTime<Utc>>,
-    ) -> Self {
-        CreateToDoItemQuery {
-            title: title.into(),
-            note: note.into(),
-            status: status.into(),
-            due_at,
-        }
-    }
-}
-
-pub struct UpdateToDoItemQuery {
-    pub id: Uuid,
-    pub title: String,
-    pub note: String,
-    pub status: String,
-    pub due_at: Option<DateTime<Utc>>,
-    pub version: i32,
-}
-
-impl UpdateToDoItemQuery {
-    pub fn new(
-        id: Uuid,
-        title: &String,
-        note: &String,
-        status: impl Into<String>,
-        due_at: Option<DateTime<Utc>>,
-        version: i32,
-    ) -> Self {
-        UpdateToDoItemQuery {
-            id,
-            title: title.into(),
-            note: note.into(),
-            status: status.into(),
-            due_at,
-            version,
-        }
-    }
-}
-
-pub struct DeleteToDoItemQuery {
-    pub id: Uuid,
-    pub deleted_by: Option<Uuid>,
-}
-
-impl DeleteToDoItemQuery {
-    pub fn new(id: Uuid, deleted_by: Option<Uuid>) -> Self {
-        DeleteToDoItemQuery { id, deleted_by }
-    }
-}
-
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GetDeletedToDoItemForAuditQuery {
     pub id: Uuid,
 }

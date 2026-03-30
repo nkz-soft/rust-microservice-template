@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
     use application::{
-        ApplicationError, ApplicationResult, GetAllToDoItemsQuery, PaginatedResult,
-        ToDoItemRepository, ToDoItemService,
+        ApplicationError, ApplicationResult, CreateToDoItemCommand, GetAllToDoItemsQuery,
+        PaginatedResult, ToDoItemCommandRepository, ToDoItemQueryRepository, ToDoItemService,
     };
     use domain::ToDoItem;
     use std::sync::{Arc, Mutex};
@@ -34,7 +34,7 @@ mod tests {
     }
 
     #[async_trait::async_trait]
-    impl ToDoItemRepository for TestToDoItemRepository {
+    impl ToDoItemQueryRepository for TestToDoItemRepository {
         async fn get_all(
             &self,
             query: GetAllToDoItemsQuery,
@@ -69,6 +69,21 @@ mod tests {
                 .ok_or(ApplicationError::NotFound { id })
         }
 
+        async fn get_deleted_by_id_for_audit(&self, id: Uuid) -> ApplicationResult<ToDoItem> {
+            *self.operation_count.lock().unwrap() += 1;
+            sleep(Duration::from_millis(10)).await; // Simulate some work
+            self.items
+                .lock()
+                .unwrap()
+                .iter()
+                .find(|item| item.id == id && item.deleted_at.is_some())
+                .cloned()
+                .ok_or(ApplicationError::NotFound { id })
+        }
+    }
+
+    #[async_trait::async_trait]
+    impl ToDoItemCommandRepository for TestToDoItemRepository {
         async fn create(&self, entity: ToDoItem) -> ApplicationResult<Uuid> {
             *self.operation_count.lock().unwrap() += 1;
             sleep(Duration::from_millis(10)).await; // Simulate some work
@@ -112,29 +127,17 @@ mod tests {
             items.retain(|item| item.id != id);
             Ok(())
         }
-
-        async fn get_deleted_by_id_for_audit(&self, id: Uuid) -> ApplicationResult<ToDoItem> {
-            *self.operation_count.lock().unwrap() += 1;
-            sleep(Duration::from_millis(10)).await; // Simulate some work
-            self.items
-                .lock()
-                .unwrap()
-                .iter()
-                .find(|item| item.id == id && item.deleted_at.is_some())
-                .cloned()
-                .ok_or(ApplicationError::NotFound { id })
-        }
     }
 
     #[tokio::test]
     async fn test_arc_memory_sharing() {
         let repository = Arc::new(TestToDoItemRepository::new());
-        let service = ToDoItemService::new(repository.clone());
+        let service = ToDoItemService::new(repository.clone(), repository.clone());
 
         // Create multiple handlers from the same service
-        let handler1 = service.get_all_handler();
-        let handler2 = service.get_all_handler();
-        let handler3 = service.get_all_handler();
+        let handler1 = service.get_all_query_handler();
+        let handler2 = service.get_all_query_handler();
+        let handler3 = service.get_all_query_handler();
 
         // All handlers should point to the same Arc instance
         assert_eq!(Arc::as_ptr(&handler1), Arc::as_ptr(&handler2));
@@ -158,16 +161,16 @@ mod tests {
     #[tokio::test]
     async fn test_service_cloning_efficiency() {
         let repository = Arc::new(TestToDoItemRepository::new());
-        let original_service = ToDoItemService::new(repository.clone());
+        let original_service = ToDoItemService::new(repository.clone(), repository.clone());
 
         // Clone service multiple times
         let cloned_services: Vec<_> = (0..100).map(|_| original_service.clone()).collect();
 
         // All cloned services should share the same handler instances
-        let original_handler_ptr = Arc::as_ptr(&original_service.get_all_handler());
+        let original_handler_ptr = Arc::as_ptr(&original_service.get_all_query_handler());
 
         for cloned_service in &cloned_services {
-            let cloned_handler_ptr = Arc::as_ptr(&cloned_service.get_all_handler());
+            let cloned_handler_ptr = Arc::as_ptr(&cloned_service.get_all_query_handler());
             assert_eq!(original_handler_ptr, cloned_handler_ptr);
         }
 
@@ -175,7 +178,7 @@ mod tests {
         let mut tasks = vec![];
         for (i, service) in cloned_services.into_iter().enumerate() {
             let task = tokio::spawn(async move {
-                let handler = service.get_all_handler();
+                let handler = service.get_all_query_handler();
                 let result = handler.execute(GetAllToDoItemsQuery::default()).await;
                 (i, result)
             });
@@ -195,7 +198,7 @@ mod tests {
     #[tokio::test]
     async fn test_concurrent_handler_access() {
         let repository = Arc::new(TestToDoItemRepository::new());
-        let service = Arc::new(ToDoItemService::new(repository.clone()));
+        let service = Arc::new(ToDoItemService::new(repository.clone(), repository.clone()));
 
         // Add test data
         let test_item = ToDoItem::new(
@@ -212,31 +215,31 @@ mod tests {
             let task = tokio::spawn(async move {
                 match i % 4 {
                     0 => {
-                        let handler = service_clone.get_all_handler();
+                        let handler = service_clone.get_all_query_handler();
                         handler
                             .execute(GetAllToDoItemsQuery::default())
                             .await
                             .map(|items| items.items.len())
                     }
                     1 => {
-                        let handler = service_clone.create_handler();
-                        let query = application::CreateToDoItemQuery::new(
-                            &format!("Task {}", i),
-                            &format!("Note {}", i),
+                        let handler = service_clone.create_command_handler();
+                        let query = CreateToDoItemCommand::new(
+                            format!("Task {}", i),
+                            format!("Note {}", i),
                             "pending",
                             None,
                         );
                         handler.execute(query).await.map(|_| 1)
                     }
                     2 => {
-                        let handler = service_clone.get_all_handler();
+                        let handler = service_clone.get_all_query_handler();
                         handler
                             .execute(GetAllToDoItemsQuery::default())
                             .await
                             .map(|items| items.items.len())
                     }
                     _ => {
-                        let handler = service_clone.get_all_handler();
+                        let handler = service_clone.get_all_query_handler();
                         handler
                             .execute(GetAllToDoItemsQuery::default())
                             .await
@@ -262,11 +265,11 @@ mod tests {
     #[tokio::test]
     async fn test_memory_leak_prevention() {
         let repository = Arc::new(TestToDoItemRepository::new());
+        let service = ToDoItemService::new(repository.clone(), repository.clone());
 
         // Create many services and let them go out of scope
         for _ in 0..1000 {
-            let service = ToDoItemService::new(repository.clone());
-            let handler = service.get_all_handler();
+            let handler = service.get_all_query_handler();
 
             // Use the handler briefly
             let _ = handler.execute(GetAllToDoItemsQuery::default()).await;
@@ -285,11 +288,11 @@ mod tests {
 
         // Test Arc-based service
         repository.reset_count();
-        let arc_service = ToDoItemService::new(repository.clone());
+        let arc_service = ToDoItemService::new(repository.clone(), repository.clone());
 
         let arc_start = std::time::Instant::now();
         for _ in 0..100 {
-            let handler = arc_service.get_all_handler();
+            let handler = arc_service.get_all_query_handler();
             let _ = handler.execute(GetAllToDoItemsQuery::default()).await;
         }
         let arc_duration = arc_start.elapsed();
@@ -297,11 +300,12 @@ mod tests {
 
         // Test Box-based service
         repository.reset_count();
-        let box_service = application::ToDoItemServiceBoxed::new(repository.clone());
+        let box_service =
+            application::ToDoItemServiceBoxed::new(repository.clone(), repository.clone());
 
         let box_start = std::time::Instant::now();
         for _ in 0..100 {
-            let handler = box_service.create_get_all_handler();
+            let handler = box_service.create_get_all_query_handler();
             let _ = handler.execute(GetAllToDoItemsQuery::default()).await;
         }
         let box_duration = box_start.elapsed();
@@ -322,13 +326,13 @@ mod tests {
     #[tokio::test]
     async fn test_service_send_sync_compliance() {
         let repository = Arc::new(TestToDoItemRepository::new());
-        let service = ToDoItemService::new(repository);
+        let service = ToDoItemService::new(repository.clone(), repository);
 
         // Test that service can be sent across thread boundaries
         let service_arc = Arc::new(service);
 
         let handle = tokio::spawn(async move {
-            let handler = service_arc.get_all_handler();
+            let handler = service_arc.get_all_query_handler();
             handler.execute(GetAllToDoItemsQuery::default()).await
         });
 
@@ -342,11 +346,11 @@ mod tests {
     #[test]
     fn test_compile_time_send_sync() {
         let repository = Arc::new(TestToDoItemRepository::new());
-        let service = ToDoItemService::new(repository.clone());
+        let service = ToDoItemService::new(repository.clone(), repository.clone());
 
         // These should compile without errors, proving Send + Sync compliance
         _verify_send_sync(service.clone());
-        _verify_send_sync(service.get_handler());
+        _verify_send_sync(service.get_query_handler());
         _verify_send_sync(repository);
     }
 }
