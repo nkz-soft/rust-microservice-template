@@ -266,6 +266,7 @@ mod tests {
     async fn test_memory_leak_prevention() {
         let repository = Arc::new(TestToDoItemRepository::new());
         let service = ToDoItemService::new(repository.clone(), repository.clone());
+        let baseline_strong_count = Arc::strong_count(&repository);
 
         // Create many services and let them go out of scope
         for _ in 0..1000 {
@@ -277,8 +278,9 @@ mod tests {
             // Service and handler should be dropped here
         }
 
-        // Repository should still be accessible and functional
-        assert_eq!(Arc::strong_count(&repository), 1);
+        // The CQRS service keeps shared handler-owned repository references alive,
+        // so the important property is that the loop does not increase the count.
+        assert_eq!(Arc::strong_count(&repository), baseline_strong_count);
         assert_eq!(repository.get_operation_count(), 1000);
     }
 
