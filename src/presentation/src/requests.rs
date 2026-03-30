@@ -1,7 +1,7 @@
 use actix_web::HttpRequest;
 use application::{
-    CreateToDoItemQuery, GetAllToDoItemsQuery, SortDirection, ToDoItemSort, ToDoItemSortField,
-    UpdateToDoItemQuery,
+    CreateToDoItemCommand, GetAllToDoItemsQuery, SortDirection, ToDoItemSort, ToDoItemSortField,
+    UpdateToDoItemCommand,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -141,10 +141,10 @@ impl GetAllToDoItemsQueryRequest {
 }
 
 impl CreateToDoItemRequest {
-    pub fn to_query(&self) -> CreateToDoItemQuery {
-        CreateToDoItemQuery::new(
-            &self.title,
-            &self.note,
+    pub fn to_command(&self) -> CreateToDoItemCommand {
+        CreateToDoItemCommand::new(
+            self.title.clone(),
+            self.note.clone(),
             self.status.trim().to_ascii_lowercase(),
             self.due_at,
         )
@@ -152,11 +152,11 @@ impl CreateToDoItemRequest {
 }
 
 impl UpdateToDoItemRequest {
-    pub fn to_query(&self, id: Uuid, version: i32) -> UpdateToDoItemQuery {
-        UpdateToDoItemQuery::new(
+    pub fn to_command(&self, id: Uuid, version: i32) -> UpdateToDoItemCommand {
+        UpdateToDoItemCommand::new(
             id,
-            &self.title,
-            &self.note,
+            self.title.clone(),
+            self.note.clone(),
             self.status.trim().to_ascii_lowercase(),
             self.due_at,
             version,
@@ -306,6 +306,39 @@ mod tests {
         assert_eq!(mapped.search.as_deref(), Some("note"));
         assert_eq!(mapped.sort.field, ToDoItemSortField::Title);
         assert_eq!(mapped.sort.direction, SortDirection::Desc);
+    }
+
+    #[test]
+    fn create_request_maps_to_command() {
+        let request = CreateToDoItemRequest {
+            title: "title".into(),
+            note: "note".into(),
+            status: "IN_PROGRESS".into(),
+            due_at: None,
+        };
+
+        let command = request.to_command();
+
+        assert_eq!(command.title, "title");
+        assert_eq!(command.note, "note");
+        assert_eq!(command.status, "in_progress");
+    }
+
+    #[test]
+    fn update_request_maps_to_command() {
+        let request = UpdateToDoItemRequest {
+            title: "title".into(),
+            note: "note".into(),
+            status: "done".into(),
+            due_at: None,
+        };
+        let id = Uuid::new_v4();
+
+        let command = request.to_command(id, 4);
+
+        assert_eq!(command.id, id);
+        assert_eq!(command.version, 4);
+        assert_eq!(command.status, "done");
     }
 
     #[test]

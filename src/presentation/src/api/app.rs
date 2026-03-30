@@ -3,7 +3,7 @@ use actix_web::web::Data;
 use actix_web::{delete, post, put};
 use actix_web::{get, web, HttpResponse, Result};
 use application::{
-    Audit, DeleteToDoItemQuery, GetAllToDoItemsQuery, GetDeletedToDoItemForAuditQuery,
+    Audit, DeleteToDoItemCommand, GetAllToDoItemsQuery, GetDeletedToDoItemForAuditQuery,
     GetToDoItemQuery, ToDoItemService,
 };
 use uuid::Uuid;
@@ -38,7 +38,7 @@ pub async fn get_all(
     query.validate()?;
     query.validate_search().map_err(HttpError::bad_request)?;
     query.validate_sort().map_err(HttpError::bad_request)?;
-    let handler = service.get_all_handler();
+    let handler = service.get_all_query_handler();
     let query: GetAllToDoItemsQuery = query.to_query().map_err(HttpError::bad_request)?;
     let data = ToDoItemsPageResponse::from(handler.execute(query).await?);
 
@@ -63,9 +63,9 @@ pub async fn get_by_id(
     service: Data<ToDoItemService>,
     id: web::Path<Uuid>,
 ) -> Result<HttpResponse, HttpError> {
-    let handler = service.get_handler();
+    let handler = service.get_query_handler();
     let item = handler
-        .execute(GetToDoItemQuery::new(Some(id.into_inner())))
+        .execute(GetToDoItemQuery::new(id.into_inner()))
         .await?;
     let etag = format_etag(item.version);
     let data = ToDoItemResponse::from(item);
@@ -89,8 +89,8 @@ pub async fn create(
     item: web::Json<CreateToDoItemRequest>,
 ) -> Result<HttpResponse, HttpError> {
     item.validate()?;
-    let handler = service.create_handler();
-    let data = handler.execute(item.to_query()).await?;
+    let handler = service.create_command_handler();
+    let data = handler.execute(item.to_command()).await?;
 
     Ok(HttpResponse::Created().json(data))
 }
@@ -120,11 +120,11 @@ pub async fn update(
     item: web::Json<UpdateToDoItemRequest>,
 ) -> Result<HttpResponse, HttpError> {
     item.validate()?;
-    let handler = service.update_handler();
+    let handler = service.update_command_handler();
     let version = parse_if_match(&request)?;
     let id = id.into_inner();
 
-    handler.execute(item.to_query(id, version)).await?;
+    handler.execute(item.to_command(id, version)).await?;
 
     Ok(HttpResponse::Ok()
         .insert_header((ETAG, format_etag(version + 1)))
@@ -150,10 +150,10 @@ pub async fn delete(
     request: actix_web::HttpRequest,
 ) -> Result<HttpResponse, HttpError> {
     let deleted_by = parse_optional_delete_actor_id(&request).map_err(HttpError::bad_request)?;
-    let handler = service.delete_handler();
+    let handler = service.delete_command_handler();
 
     handler
-        .execute(DeleteToDoItemQuery::new(id.into_inner(), deleted_by))
+        .execute(DeleteToDoItemCommand::new(id.into_inner(), deleted_by))
         .await?;
 
     Ok(HttpResponse::from(HttpResponse::Ok()))
@@ -192,7 +192,7 @@ pub async fn get_deleted_by_id_for_audit(
         return Err(HttpError::unauthorized("invalid audit token"));
     }
 
-    let handler = service.get_deleted_for_audit_handler();
+    let handler = service.get_deleted_for_audit_query_handler();
     let item = handler
         .execute(GetDeletedToDoItemForAuditQuery::new(id.into_inner()))
         .await?;

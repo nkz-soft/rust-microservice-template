@@ -3,7 +3,7 @@ use crate::DbPool;
 use actix_web::web::Data;
 use application::{
     ApplicationError, ApplicationResult, GetAllToDoItemsQuery, PaginatedResult, SortDirection,
-    ToDoItemRepository, ToDoItemSortField,
+    ToDoItemCommandRepository, ToDoItemQueryRepository, ToDoItemSortField,
 };
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
@@ -113,7 +113,7 @@ impl PostgresToDoItemRepository {
 }
 
 #[async_trait]
-impl ToDoItemRepository for PostgresToDoItemRepository {
+impl ToDoItemQueryRepository for PostgresToDoItemRepository {
     async fn get_all(
         &self,
         query: GetAllToDoItemsQuery,
@@ -168,7 +168,10 @@ impl ToDoItemRepository for PostgresToDoItemRepository {
         })
         .await
     }
+}
 
+#[async_trait]
+impl ToDoItemCommandRepository for PostgresToDoItemRepository {
     async fn create(&self, entity: ToDoItem) -> ApplicationResult<Uuid> {
         self.run_db(move |connection| {
             let new_entity = NewDbToDoItem::from(&entity);

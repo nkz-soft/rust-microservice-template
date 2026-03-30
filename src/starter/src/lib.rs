@@ -38,8 +38,8 @@ async fn run_internal(settings: &Settings) -> Result<Server> {
         pool.clone(),
     )));
 
-    // Create service with dependency injection
-    let todo_service = ToDoItemService::new(repository);
+    // Create service with explicit command/query dependencies.
+    let todo_service = ToDoItemService::new(repository.clone(), repository);
     let audit_settings = settings.audit.clone();
     let observability_settings = observability_config.clone();
     let metrics_handle = prometheus_handle.clone();
