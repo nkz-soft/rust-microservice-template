@@ -55,7 +55,7 @@ jobs:
         cargo llvm-cov --workspace --all-features --cobertura --output-path coverage/coverage.cobertura.xml --fail-under-lines 90
     - name: Build coverage summary
       if: github.event_name == 'pull_request'
-      uses: danielpalme/ReportGenerator-GitHub-Action@5.5.4
+      uses: danielpalme/ReportGenerator-GitHub-Action@5.5.5
       with:
         reports: 'coverage/*.cobertura.xml'
         targetdir: 'coverage/result'
