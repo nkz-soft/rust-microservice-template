@@ -59,6 +59,6 @@ reqwest = { version = "0.13.2", features = ["json"]}
 serial_test = "3.4.0"
 
 # Misc
-ctor = "0.10.0"
+ctor = "0.10.1"
 uuid = { version = "1.23.0", features = ["v4", "serde"] }
 readonly = "0.2.13"
