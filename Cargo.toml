@@ -31,7 +31,7 @@ async-trait = "0.1.89"
 
 # Database and ORM
 tokio-postgres = { version = "0.7.17", features = ["with-uuid-1"] }
-diesel = { version = "2.3.7", features = ["postgres", "r2d2", "uuid", "chrono"] }
+diesel = { version = "2.3.8", features = ["postgres", "r2d2", "uuid", "chrono"] }
 diesel_migrations = "2.3.1"
 
 # Logging
